@@ -8,7 +8,7 @@ export const PEOPLE = [
   { id:'office', face:'🧑‍💼', name:'Office guy', lines:['{o}, quick quick, got meeting!','{o}. Can PayNow right?'], pat:0.8 },
   { id:'student', face:'🧑‍🎓', name:'Poly student', lines:['Uncle, {o} please.','{o}… exam later, need power.'], pat:1 },
   { id:'nsf', face:'🪖', name:'NSF', lines:['{o}! Book out liao, shiok.','{o}. Sergeant waiting, chop chop.'], pat:0.85 },
-  { id:'rider', face:'🛵', name:'Delivery rider', lines:['{o}. Order for Block 123!','{o}, rush ah, rain coming.'], pat:0.75, tapau:true },
+  { id:'rider', face:'🛵', name:'Delivery rider', lines:['{o}. Order for Block 123!','{o}, rush ah, rain coming.'], pat:0.75, dabao:true },
   { id:'tourist', face:'📸', name:'Tourist', lines:['Hi! Could I get {o}, please?','Um, hello! {o}? Thank you!'], pat:1.45, english:true, minLvl:1 },
 ];
 export const HAPPY = ['Shiok! 😋','Steady lah! 👍','Power! 💪','Wah, nice! 🤤','Ho seh liao!'];
@@ -21,7 +21,7 @@ export const GRIPE = {
   shots:{ 2:'So weak! Gao means double lah!', 1:'Wah so thick! I never say gao.' },
   water:{ true:'So thick! Po means add water lah!', false:'Why so watery? I never say po!' },
   ice:{ true:'Peng means ICE leh!', false:'Who ask for ice? I want hot!' },
-  cup:{ normal:'I drink here leh, why give me takeaway cup?', takeaway:'Tapau lah! I bringing go one!' },
+  cup:{ normal:'I drink here leh, why give me takeaway cup?', takeaway:'Dabao lah! I bringing go one!' },
 };
 
 /* ---------- tutorial lessons ---------- */
@@ -36,7 +36,7 @@ export const LESSONS = [
   { t:'"Kosong" = no sugar', tip:'Kosong = zero sugar. Don\'t touch the Sugar button. (Kopi O Kosong = black coffee, no sugar.)', o:mk({ milk:null, sugar:0 }), who:'office' },
   { t:'"Ga dai" = extra sweet', tip:'Ga dai = 3 spoons. Tap Sugar three times. (Too many? No take-backs: pour away and start again.)', o:mk({ base:'teh', sugar:3 }), who:'nsf' },
   { t:'"Peng" = ice', tip:'Peng means iced. Add Ice.', o:mk({ ice:true }), who:'student' },
-  { t:'"Tapau" = takeaway', tip:'Tapau means takeaway. Use the Takeaway cup instead of the normal cup.', o:mk({ base:'teh', milk:'evap', cup:'takeaway' }), who:'rider' },
+  { t:'"Dabao" = takeaway', tip:'Dabao means takeaway. Use the Takeaway cup instead of the normal cup.', o:mk({ base:'teh', milk:'evap', cup:'takeaway' }), who:'rider' },
   { t:'"Gao" = strong', tip:'Gao = double shot. Tap the drink button twice (you\'ll see ×2).', o:mk({ shots:2 }), who:'office' },
   { t:'"Po" = weak', tip:'Po = weaker. Add Water.', o:mk({ base:'teh', water:true }), who:'auntie' },
   { t:'Milo Dinosaur 🦖', tip:'The legend: Milo ×2 (tap twice) + condensed milk + 2 spoons + Ice.', o:mk({ base:'milo', shots:2, ice:true }), who:'nsf' },
@@ -64,7 +64,7 @@ export function dictHTML(){
   <b>Gao</b><span>strong: double shot (tap the drink twice)</span>
   <b>Po</b><span>weak: add water</span>
   <b>Peng</b><span>with ice</span>
-  <b>Tapau</b><span>takeaway cup (otherwise a normal cup)</span>
+  <b>Dabao</b><span>takeaway cup (otherwise a normal cup)</span>
   <b>Milo Dinosaur</b><span>Milo, double shot, condensed milk, normal sweet, ice</span>
   <span class="ex"><b>Kopi O Kosong Peng</b> = coffee, no milk, no sugar, ice, normal cup. Tourists order in English, so you have to translate!</span>`;
 }

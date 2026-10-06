@@ -97,7 +97,7 @@ function spawn(){
   const lvl = level();
   const pool = PEOPLE.filter(p => (p.minLvl || 0) <= lvl);
   const person = pick(pool);
-  const order = randomOrder(lvl, person.tapau);
+  const order = randomOrder(lvl, person.dabao);
   const pat = STAGES[lvl].pat * person.pat + (order.base === 'milo' ? 2 : 0);
   const say = pick(person.lines).replace('{o}', person.english ? englishOf(order) : `<b>${nameOf(order)}</b>`);
   const c = { id: ++G.id, person, order, max: pat, left: pat, say, mad: null };

@@ -12,7 +12,7 @@ export const isDino = d => d.base === 'milo' && d.shots === 2 && d.ice && !d.wat
 export const SUGAR_WORD = { 0:'Kosong', 1:'Siew Dai', 2:'', 3:'Ga Dai' };
 
 export function nameOf(d){
-  if(isDino(d)) return 'Milo Dinosaur' + (d.cup === 'takeaway' ? ' Tapau' : '');
+  if(isDino(d)) return 'Milo Dinosaur' + (d.cup === 'takeaway' ? ' Dabao' : '');
   const p = [cap(d.base)];
   if(d.milk === null) p.push('O');
   if(d.milk === 'evap') p.push('C');
@@ -20,7 +20,7 @@ export function nameOf(d){
   if(d.water) p.push('Po');
   if(SUGAR_WORD[d.sugar]) p.push(SUGAR_WORD[d.sugar]);
   if(d.ice) p.push('Peng');
-  if(d.cup === 'takeaway') p.push('Tapau');
+  if(d.cup === 'takeaway') p.push('Dabao');
   return p.join(' ');
 }
 export function englishOf(d){
@@ -35,13 +35,13 @@ export function englishOf(d){
   if(d.cup === 'takeaway') tail.push('to go');
   return s + ', ' + tail.join(', ');
 }
-export function randomOrder(lvl, forceTapau){
+export function randomOrder(lvl, forceDabao){
   const r = Math.random, d = blankCup();
   d.base = r() < 0.18 ? 'milo' : (r() < 0.6 ? 'kopi' : 'teh');
   d.shots = 1;
   if(d.base === 'milo' && lvl >= 2 && r() < 0.45){
     Object.assign(d, { shots:2, milk:'condensed', sugar:2, ice:true });
-    d.cup = (forceTapau || r() < 0.3) ? 'takeaway' : 'normal';
+    d.cup = (forceDabao || r() < 0.3) ? 'takeaway' : 'normal';
     return d;
   }
   d.milk = d.base === 'milo' ? pick(['condensed','condensed',null]) : pick(['condensed','evap',null]);
@@ -49,7 +49,7 @@ export function randomOrder(lvl, forceTapau){
   if(d.milk === 'condensed' && d.sugar === 0) d.sugar = 1;
   d.ice = lvl >= 1 && r() < (lvl >= 2 ? 0.45 : 0.25);
   if(lvl >= 2 && r() < 0.35){ if(r() < 0.55) d.shots = 2; else d.water = true; }
-  d.cup = (forceTapau || (lvl >= 2 && r() < 0.35)) ? 'takeaway' : 'normal';
+  d.cup = (forceDabao || (lvl >= 2 && r() < 0.35)) ? 'takeaway' : 'normal';
   return d;
 }
 export const same = (a,b) => FIELDS.every(f => a[f] === b[f]);

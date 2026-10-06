@@ -103,6 +103,7 @@ button{font:inherit;cursor:pointer;color:inherit}
 .opt.on{background:var(--yellow);border-color:#c99a14;box-shadow:0 3px 0 #b8890d}
 .opt .e{margin-right:4px}
 .opt[disabled]{opacity:.35;pointer-events:none}
+.opt.nope{animation:shake .35s;border-color:var(--bad)}
 
 /* toasts */
 .toasts{position:fixed;left:50%;top:84px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;z-index:30;pointer-events:none;width:min(92vw,460px)}
@@ -190,7 +191,7 @@ label.tog input{width:20px;height:20px;accent-color:var(--green)}
         <button class="serve" id="serveBtn">SERVE ✋</button>
         <button class="trash" id="trashBtn">Pour away</button>
       </div>
-      <div class="kbd">Tap the drink again for a double shot · Sugar: tap per spoon · Enter = serve · Esc = pour away · Tap a customer to pick who you're serving</div>
+      <div class="kbd">Cup first · No take-backs: wrong? Pour away · Tap the drink twice = double shot · Sugar: tap per spoon · Enter = serve · Esc = pour away · Tap a customer to pick who you're serving</div>
     </div>
     <div class="controls" id="controls"></div>
   </section>
@@ -275,7 +276,7 @@ function nameOf(d){
 function englishOf(d){
   const noun = { kopi:'coffee', teh:'tea', milo:'Milo' }[d.base];
   if(isDino(d)) return 'an iced Milo with a double scoop of Milo, regular sugar' + (d.cup === 'takeaway' ? ', to go' : '');
-  let s = 'a ' + (d.shots === 2 ? 'strong ' : d.water ? 'weak ' : '') + (d.ice ? 'iced ' : 'hot ') + (d.milk === null && d.base !== 'milo' ? 'black ' : '') + noun;
+  let s = (d.shots === 2 ? 'a strong ' : d.water ? 'a weak ' : d.ice ? 'an ' : 'a ') + (d.ice ? 'iced ' : 'hot ') + (d.milk === null && d.base !== 'milo' ? 'black ' : '') + noun;
   const tail = [];
   if(d.milk === 'condensed') tail.push('with condensed milk');
   if(d.milk === 'evap') tail.push('with evaporated milk');
@@ -363,26 +364,39 @@ const sfx = {
 function buildControls(){
   const c = $('#controls');
   const btn = (attr, v, l, e) => `<button class="opt" data-${attr}="${v}"><span class="e">${e}</span>${l}</button>`;
-  c.innerHTML = '<div class="grp"><h3>Ingredients</h3><div class="opts">' +
+  c.innerHTML = '<div class="grp"><h3>1 · Cup first</h3><div class="opts">' + CUPS.map(([v,l,e]) => btn('cup', v, l, e)).join('') + '</div></div>' +
+    '<div class="grp"><h3>2 · Ingredients</h3><div class="opts">' +
     BASES.map(([v,l,e]) => `<button class="opt" data-base="${v}"><span class="e">${e}</span>${l}<span class="shots"></span></button>`).join('') +
     MILKS.map(([v,l,e]) => btn('milk', v, l, e)).join('') +
     '<button class="opt" id="sugarBtn"><span class="e">🥄</span>Sugar<span id="spoons"></span></button>' +
-    btn('water', '1', 'Water', '💧') + btn('ice', '1', 'Ice', '🧊') + '</div></div>' +
-    '<div class="grp"><h3>Cup</h3><div class="opts">' + CUPS.map(([v,l,e]) => btn('cup', v, l, e)).join('') + '</div></div>';
+    btn('water', '1', 'Water', '💧') + btn('ice', '1', 'Ice', '🧊') + '</div></div>';
   c.onclick = e => {
     const b = e.target.closest('.opt'); if(!b) return;
-    sfx.click();
     const d = b.dataset;
-    if(b.id === 'sugarBtn') cup.sugar = (cup.sugar + 1) % 4;
-    else if(d.base){
-      if(cup.base !== d.base){ cup.base = d.base; cup.shots = 1; }
-      else if(cup.shots === 1) cup.shots = 2;
-      else { cup.base = null; cup.shots = 0; }
+    const no = msg => { sfx.bad(); toast(msg, 'bad'); b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); setTimeout(() => b.classList.remove('nope'), 400); };
+    if(d.cup){
+      if(!cup.cup){ cup.cup = d.cup; sfx.click(); renderCup(); }
+      else no(cup.cup === d.cup ? 'Already got cup lah.' : 'Cup already out. Pour away first if wrong!');
+      return;
     }
-    else if(d.water) cup.water = !cup.water;
-    else if(d.milk) cup.milk = cup.milk === d.milk ? null : d.milk;
-    else if(d.cup) cup.cup = cup.cup === d.cup ? null : d.cup;
-    else if(d.ice) cup.ice = !cup.ice;
+    if(!cup.cup) return no('Cup first lah! 🥤');
+    const what = { kopi:'coffee', teh:'tea', milo:'Milo' };
+    if(b.id === 'sugarBtn'){
+      if(cup.sugar >= 3) return no('3 spoons already! Want diabetes ah?');
+      cup.sugar++;
+    }
+    else if(d.base){
+      if(cup.base && cup.base !== d.base) return no(`Already got ${what[cup.base]} inside! Pour away first.`);
+      if(cup.shots >= 2) return no('Double shot already, cannot more!');
+      cup.base = d.base; cup.shots++;
+    }
+    else if(d.milk){
+      if(cup.milk) return no(cup.milk === d.milk ? 'Milk already inside.' : 'Already got other milk inside! Pour away first.');
+      cup.milk = d.milk;
+    }
+    else if(d.water){ if(cup.water) return no('Water already inside.'); cup.water = true; }
+    else if(d.ice){ if(cup.ice) return no('Ice already inside.'); cup.ice = true; }
+    sfx.click();
     renderCup();
   };
 }
@@ -406,12 +420,12 @@ function renderCup(){
   else liq.style.height = '0';
   $('#ice').style.display = cup.ice ? 'block' : 'none';
   const parts = [];
+  if(cup.cup) parts.push(CUPS.find(x => x[0] === cup.cup)[1]);
   if(cup.base) parts.push(BASES.find(x => x[0] === cup.base)[1] + (cup.shots === 2 ? ' ×2' : ''));
   if(cup.milk) parts.push(MILKS.find(x => x[0] === cup.milk)[1]);
   if(cup.water) parts.push('Water');
   if(cup.sugar) parts.push(`${cup.sugar} sugar`);
   if(cup.ice) parts.push('Ice');
-  if(cup.cup) parts.push(CUPS.find(x => x[0] === cup.cup)[1]);
   const r = $('#readout');
   r.textContent = parts.length ? parts.join(' · ') : 'Empty. Start making something';
   r.classList.toggle('hidden', !parts.length);
@@ -543,13 +557,13 @@ function toast(msg, cls = ''){
 const mk = o => Object.assign({ base:'kopi', shots:1, milk:'condensed', sugar:2, water:false, ice:false, cup:'normal' }, o);
 const P = id => PEOPLE.find(p => p.id === id);
 const LESSONS = [
-  { t:'Plain "Kopi"', tip:'Plain Kopi = coffee + condensed milk + normal sweet (2 spoons of sugar) in a normal cup. When nobody says anything else, that\'s the default.', o:mk({}), who:'uncle' },
+  { t:'Plain "Kopi"', tip:'Plain Kopi = coffee + condensed milk + normal sweet (2 spoons of sugar) in a normal cup. When nobody says anything else, that\'s the default. Rules of the counter: cup goes out FIRST, and nothing comes back out. Mess up? Pour away.', o:mk({}), who:'uncle' },
   { t:'"Teh" is tea', tip:'Teh = tea. Same defaults as Kopi: condensed milk, 2 spoons, normal cup.', o:mk({ base:'teh' }), who:'auntie' },
   { t:'"O" = no milk', tip:'O means NO milk at all. Just the drink + sugar. Leave the milk buttons alone.', o:mk({ milk:null }), who:'uncle' },
   { t:'"C" = evaporated milk', tip:'C means evaporated milk instead of condensed.', o:mk({ base:'teh', milk:'evap' }), who:'student' },
   { t:'"Siew dai" = less sweet', tip:'Sugar is counted in spoons. Siew dai = 1 spoon. Tap Sugar once per spoon.', o:mk({ sugar:1 }), who:'auntie' },
   { t:'"Kosong" = no sugar', tip:'Kosong = zero sugar. Don\'t touch the Sugar button. (Kopi O Kosong = black coffee, no sugar.)', o:mk({ milk:null, sugar:0 }), who:'office' },
-  { t:'"Ga dai" = extra sweet', tip:'Ga dai = 3 spoons. Tap Sugar three times. (A 4th tap resets to zero.)', o:mk({ base:'teh', sugar:3 }), who:'nsf' },
+  { t:'"Ga dai" = extra sweet', tip:'Ga dai = 3 spoons. Tap Sugar three times. (Too many? No take-backs: pour away and start again.)', o:mk({ base:'teh', sugar:3 }), who:'nsf' },
   { t:'"Peng" = ice', tip:'Peng means iced. Add Ice.', o:mk({ ice:true }), who:'student' },
   { t:'"Tapau" = takeaway', tip:'Tapau means takeaway. Use the Takeaway cup instead of the normal cup.', o:mk({ base:'teh', milk:'evap', cup:'takeaway' }), who:'rider' },
   { t:'"Gao" = strong', tip:'Gao = double shot. Tap the drink button twice (you\'ll see ×2).', o:mk({ shots:2 }), who:'office' },
@@ -593,7 +607,7 @@ function showHints(){
   const extra = [];
   if(o.shots === 2) extra.push('tap the drink twice');
   if(o.sugar) extra.push(`Sugar ×${o.sugar}`);
-  toast('Tap the glowing ones' + (extra.length ? ': ' + extra.join(', ') : ''));
+  toast('Cup first, then the glowing ones' + (extra.length ? ': ' + extra.join(', ') : ''));
 }
 function finishTutorial(){
   G.over = true; G.tutorial = false;

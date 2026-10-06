@@ -1,6 +1,6 @@
 // Service worker: makes the game load instantly and work offline.
 // Bump VERSION whenever you deploy changes so players get the new files.
-const VERSION = 'kopi-v1';
+const VERSION = 'kopi-v2';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'css/style.css',

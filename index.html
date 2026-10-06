@@ -29,8 +29,8 @@
       <span id="hMoney">💰 $0.00</span>
       <span id="hStreak">🔥 0</span>
       <span id="hLives">❤️❤️❤️</span>
-      <button class="iconbtn" id="dictBtn" title="Kopi 101 cheat sheet">📖 Kopi 101</button>
-      <button class="iconbtn" id="muteBtn" title="Sound">🔊</button>
+      <button class="iconbtn" id="dictBtn" title="Kopi 101 cheat sheet" aria-label="Kopi 101 cheat sheet">📖<span class="lbl"> Kopi 101</span></button>
+      <button class="iconbtn" id="muteBtn" title="Sound" aria-label="Sound on or off">🔊</button>
     </div>
   </header>
 
@@ -73,7 +73,7 @@
     <h2>Kopi Order Master</h2>
     <p>It's 7am at Ah Huat Kopitiam. The uncle who usually makes the drinks has "gone to the toilet" and hasn't come back. Now you're on the counter.</p>
     <p><b>How to play:</b> read the order, make the drink, hit <b>Serve</b>. Get it wrong and they'll let you know. If 3 customers walk off, you're fired. The shift is 2½ minutes: it starts slow, then the crowd picks up.</p>
-    <div class="dict" id="dictStart"></div>
+    <details class="dictwrap" id="dictWrap" open><summary>📖 Kopi 101 cheat sheet</summary><div class="dict" id="dictStart"></div></details>
     <div class="row">
       <button class="big" id="startBtn">Open shop ▶</button>
       <button class="ghost" id="tutBtn">📘 Tutorial first (recommended)</button>

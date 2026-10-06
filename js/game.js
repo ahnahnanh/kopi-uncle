@@ -301,6 +301,7 @@ function end(){
 /* ---------- wire up ---------- */
 buildControls(); renderCup();
 $('#dictStart').innerHTML = dictHTML();
+if(matchMedia('(max-width:720px)').matches) $('#dictWrap').open = false; // keep the start screen short on phones
 $('#drawer').innerHTML = `<div class="dict">${dictHTML()}</div>`;
 $('#startBtn').onclick = start;
 $('#tutBtn').onclick = startTutorial;

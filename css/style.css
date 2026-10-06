@@ -135,12 +135,108 @@ label.tog input{width:20px;height:20px;accent-color:var(--green)}
 .opt.hint{animation:pulse 1s infinite;border-color:var(--green)}
 @keyframes pulse{0%,100%{box-shadow:0 3px 0 #cfc9ba,0 0 0 0 #1f6f5088}50%{box-shadow:0 3px 0 #cfc9ba,0 0 0 7px #1f6f5000}}
 .cust.tutc .pbar{visibility:hidden}
-@media (max-width:720px){
-  .tut{flex-direction:column;align-items:stretch}
-  .tut .btns{flex-direction:row}
-  .station{grid-template-columns:1fr}
-  .cupstage{height:150px}
+/* collapsible cheat sheet on the start screen */
+.dictwrap summary{cursor:pointer;font-weight:800;color:var(--green-d);padding:4px 0;list-style:none}
+.dictwrap summary::-webkit-details-marker{display:none}
+.dictwrap summary::after{content:" ▾"}
+.dictwrap[open] summary::after{content:" ▴"}
+
+/* touch devices: no keyboard hints, no hover lift */
+@media (hover:none){
   .kbd{display:none}
-  .cust{flex-basis:170px}
-  .opt{padding:5px 9px;font-size:14px}
+  .cust:hover{transform:none}
+}
+
+/* ================= PHONES ================= */
+@media (max-width:720px){
+  body{overscroll-behavior:none}
+  .wrap{padding-top:max(8px,env(safe-area-inset-top));padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right));
+        padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+
+  /* compact signboard: title + stats on one strip */
+  .sign{padding:4px 8px 6px;border-width:3px;gap:4px;flex-wrap:wrap}
+  .sign h1{font-size:16px;white-space:nowrap;flex:1 1 100%;text-align:center}
+  .sign h1 small{display:none}
+  .hud{gap:4px;flex:1 1 100%;flex-wrap:nowrap;justify-content:space-between;min-width:0}
+  .hud span,.iconbtn{font-size:13px;padding:1px 8px}
+  #hStreak{display:none}
+  .lbl{display:none}
+
+  /* tutorial banner */
+  .tut{flex-direction:column;align-items:stretch;gap:6px;padding:8px 10px;margin-top:8px}
+  .tut b.t{font-size:16px}
+  .tut p{font-size:13px;line-height:1.25}
+  .tut .step{display:none}
+  .tut:not(.hide) ~ .queue{min-height:0;margin:6px 0}
+  .tut .btns{flex-direction:row}
+  .tut .btns .ghost{flex:1;padding:4px 8px;font-size:13px}
+
+  /* customers: smaller cards, swipe sideways if many */
+  .queue{min-height:118px;margin:10px 0 8px;gap:8px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+  .cust{flex:0 0 46%;max-width:180px;padding:6px 8px;scroll-snap-align:start}
+  .cust .face{font-size:24px}
+  .cust .nm{font-size:12px}
+  .bubble{font-size:14px;padding:3px 7px}
+  .cust.sel::after{font-size:10px;top:-9px}
+
+  /* station: cup + readout side by side, buttons in a tidy grid */
+  .station{grid-template-columns:1fr;gap:10px;padding:10px;border-width:2px}
+  .cupzone{flex-direction:row;align-items:center;gap:10px}
+  .cupstage{height:96px;width:96px;flex:0 0 96px}
+  .cup{transform:scale(.6);transform-origin:50% 100%}
+  .readout{flex:1;text-align:left;font-size:15px;line-height:1.25;min-height:0}
+
+  .controls{gap:8px}
+  .grp h3{font-size:12px;margin-bottom:4px}
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .grp:first-child .opts{grid-template-columns:repeat(2,1fr)}
+  .opt{min-height:52px;padding:4px;font-size:13px;line-height:1.1;border-radius:12px;
+       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center}
+  .opt .e{margin:0;font-size:20px;line-height:1}
+  .grp:first-child .opt{flex-direction:row;gap:6px;font-size:15px}
+
+  /* Serve / Pour away pinned to the bottom, in thumb reach */
+  .actions{position:fixed;left:0;right:0;bottom:0;z-index:25;gap:10px;
+    padding:10px max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+    background:linear-gradient(to top,#f4faf6 70%,#f4faf600)}
+  .serve{font-size:20px;padding:12px}
+  .trash{font-size:16px}
+
+  /* feedback pops up just above the bottom bar instead of covering the orders */
+  .toasts{top:auto;bottom:calc(78px + env(safe-area-inset-bottom))}
+  .toast{font-size:14px;padding:5px 12px}
+
+  /* in-game cheat sheet becomes a bottom sheet */
+  .drawer{left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));width:auto;max-width:none;padding:0 10px}
+  .drawer .dict{max-height:55vh;overflow:auto;font-size:14px}
+
+  /* start / end screens */
+  .overlay{align-items:flex-start;padding:max(12px,env(safe-area-inset-top)) 12px 12px}
+  .card{padding:16px;border-width:3px}
+  .card p{font-size:15px}
+  .dict{font-size:14px;padding:8px 10px;gap:2px 8px}
+  .row{gap:8px}
+  .row .big{flex:1 1 100%;font-size:20px;padding:12px}
+  .row .ghost{flex:1 1 auto}
+  .stats b{font-size:20px}
+}
+
+/* very small phones */
+@media (max-width:360px){
+  .sign h1{font-size:13px}
+  .hud span,.iconbtn{font-size:12px;padding:1px 6px}
+  .opt{min-height:48px;font-size:12px}
+}
+
+/* short phones (e.g. 360×640): squeeze vertical space so nothing hides under the Serve bar */
+@media (max-width:720px) and (max-height:700px){
+  .queue{min-height:104px;margin:6px 0}
+  .bubble{font-size:13px}
+  .cupstage{height:78px;width:84px;flex-basis:84px}
+  .cup{transform:scale(.5)}
+  .station{padding:8px;gap:8px}
+  .controls{gap:6px}
+  .opt{min-height:46px}
+  .opt .e{font-size:18px}
+  .serve{padding:10px}
 }

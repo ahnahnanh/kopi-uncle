@@ -73,6 +73,8 @@ button{font:inherit;cursor:pointer;color:inherit}
 .cup.glass .handle{display:none}
 .cup.bag{width:118px;height:140px;border:2px solid #d9ecf5;border-radius:18px 18px 44px 44px;background:#eaf6fc88;box-shadow:inset 0 0 0 1px #b8d8e8}
 .cup.bag .handle{display:none}
+.cup.nocup{border:3px dashed #bdb7a8;background:transparent;box-shadow:none}
+.cup.nocup .handle{display:none}
 .cup.bag::before{content:"";position:absolute;left:50%;top:-58px;width:62px;height:62px;margin-left:-31px;border:4px solid #f0c75a;border-bottom:0;border-radius:50% 50% 0 0}
 .liquid{position:absolute;left:3px;right:3px;bottom:3px;height:0;border-radius:0 0 28px 28px;transition:height .35s,background .25s,filter .25s}
 .cup.glass .liquid{border-radius:0 0 8px 8px}
@@ -172,7 +174,7 @@ label.tog input{width:20px;height:20px;accent-color:var(--green)}
         <button class="serve" id="serveBtn">SERVE ✋</button>
         <button class="trash" id="trashBtn">Pour away</button>
       </div>
-      <div class="kbd">Tap an option again to un-select · Enter = serve · Esc = pour away · Tap a customer to pick who you're serving</div>
+      <div class="kbd">Tap the drink again for a double shot · Sugar: tap per spoon · Enter = serve · Esc = pour away · Tap a customer to pick who you're serving</div>
     </div>
     <div class="controls" id="controls"></div>
   </section>
@@ -191,7 +193,7 @@ label.tog input{width:20px;height:20px;accent-color:var(--green)}
     <div class="dict" id="dictStart"></div>
     <div class="row">
       <button class="big" id="startBtn">Open shop ▶</button>
-      <label class="tog"><input type="checkbox" id="sifu"> Sifu mode: hide the drink name (×1.5 money)</label>
+      <label class="tog"><input type="checkbox" id="sifu"> Sifu mode: no Kopi 101 cheat sheet during the shift (×1.5 money)</label>
     </div>
   </div>
 </div>
@@ -223,100 +225,76 @@ const cap = s => s[0].toUpperCase() + s.slice(1);
 const GAME_LEN = 120, MAX_WALKOUTS = 3;
 
 /* ---------- drink model ---------- */
-const GROUPS = [
-  { key:'base', title:'1 · Drink', opts:[['kopi','Kopi','☕'],['teh','Teh','🍵'],['milo','Milo','🍫']] },
-  { key:'milk', title:'2 · Milk', opts:[['evap','Evaporated (C)','🥛'],['none','No milk (O)','🚫']] },
-  { key:'sugar', title:'3 · Sugar', opts:[['kosong','Kosong','∅'],['siewdai','Siew dai','▫'],['gadai','Ga dai','▫▫▫']] },
-  { key:'strength', title:'4 · Strength', opts:[['po','Po (weak)','💧'],['gao','Gao (strong)','💪']] },
-];
-const EXTRAS = [['ice','Peng (ice)','🧊'],['tapau','Tapau (bag)','🛍️'],['powder','Milo mountain','⛰️'],['icecream','Ice cream','🍨']];
-const blankCup = () => ({ base:null, milk:null, sugar:null, strength:null, ice:false, tapau:false, powder:false, icecream:false });
-const FIELDS = ['base','milk','sugar','strength','ice','tapau','powder','icecream'];
+const BASES = [['kopi','Coffee','☕'],['teh','Tea','🍵'],['milo','Milo','🍫']];
+const MILKS = [['condensed','Condensed milk','🥫'],['evap','Evaporated milk','🥛']];
+const CUPS = [['normal','Normal cup','☕'],['takeaway','Takeaway cup','🥤']];
+const blankCup = () => ({ base:null, shots:0, milk:null, sugar:0, water:false, ice:false, cup:null });
+const FIELDS = ['base','cup','shots','milk','water','sugar','ice'];
+const isDino = d => d.base === 'milo' && d.shots === 2 && d.ice && !d.water && d.milk === 'condensed' && d.sugar === 2;
+const SUGAR_WORD = { 0:'Kosong', 1:'Siew Dai', 2:'', 3:'Ga Dai' };
 
 function nameOf(d){
-  if(!d.base) return '';
-  let n;
-  if(d.base === 'milo'){
-    if(d.icecream && d.powder && d.ice) n = 'Milo Godzilla';
-    else if(d.powder && d.ice && !d.icecream) n = 'Milo Dinosaur';
-    else n = 'Milo' + (d.ice ? ' Peng' : '') + (d.powder ? ' + powder' : '') + (d.icecream ? ' + ice cream' : '');
-  } else {
-    const p = [cap(d.base)];
-    if(d.milk === 'none') p.push('O');
-    if(d.milk === 'evap') p.push('C');
-    if(d.strength === 'gao') p.push('Gao');
-    if(d.strength === 'po') p.push('Po');
-    if(d.sugar === 'kosong') p.push('Kosong');
-    if(d.sugar === 'siewdai') p.push('Siew Dai');
-    if(d.sugar === 'gadai') p.push('Ga Dai');
-    if(d.ice) p.push('Peng');
-    n = p.join(' ');
-  }
-  if(d.tapau) n += ' Tapau';
-  return n;
+  if(isDino(d)) return 'Milo Dinosaur' + (d.cup === 'takeaway' ? ' Tapau' : '');
+  const p = [cap(d.base)];
+  if(d.milk === null) p.push('O');
+  if(d.milk === 'evap') p.push('C');
+  if(d.shots === 2) p.push('Gao');
+  if(d.water) p.push('Po');
+  if(SUGAR_WORD[d.sugar]) p.push(SUGAR_WORD[d.sugar]);
+  if(d.ice) p.push('Peng');
+  if(d.cup === 'takeaway') p.push('Tapau');
+  return p.join(' ');
 }
 function englishOf(d){
-  if(d.base === 'milo'){
-    let s = d.icecream ? 'an iced Milo with a big pile of Milo powder AND a scoop of ice cream on top'
-          : d.powder ? 'an iced Milo with a mountain of Milo powder on top'
-          : (d.ice ? 'an iced Milo' : 'a hot Milo');
-    return s + (d.tapau ? ', to go' : '');
-  }
-  const bits = [];
-  if(d.strength === 'gao') bits.push('strong');
-  if(d.strength === 'po') bits.push('weak');
-  bits.push(d.ice ? 'iced' : 'hot');
-  if(d.milk === 'none') bits.push('black');
-  let s = 'a ' + bits.join(' ') + ' ' + (d.base === 'kopi' ? 'coffee' : 'tea');
+  const noun = { kopi:'coffee', teh:'tea', milo:'Milo' }[d.base];
+  if(isDino(d)) return 'an iced Milo with a double scoop of Milo, regular sugar' + (d.cup === 'takeaway' ? ', to go' : '');
+  let s = 'a ' + (d.shots === 2 ? 'strong ' : d.water ? 'weak ' : '') + (d.ice ? 'iced ' : 'hot ') + (d.milk === null && d.base !== 'milo' ? 'black ' : '') + noun;
   const tail = [];
-  if(d.milk === null) tail.push('with condensed milk');
+  if(d.milk === 'condensed') tail.push('with condensed milk');
   if(d.milk === 'evap') tail.push('with evaporated milk');
-  if(d.sugar === 'kosong') tail.push('no sugar');
-  if(d.sugar === 'siewdai') tail.push('less sweet');
-  if(d.sugar === 'gadai') tail.push('extra sweet');
-  if(d.sugar === null && d.milk !== null) tail.push('with sugar');
-  if(d.tapau) tail.push('to go');
-  return s + (tail.length ? ', ' + tail.join(', ') : '');
+  if(d.milk === null && d.base === 'milo') tail.push('no milk');
+  tail.push(['no sugar','less sweet','regular sugar','extra sweet'][d.sugar]);
+  if(d.cup === 'takeaway') tail.push('to go');
+  return s + ', ' + tail.join(', ');
 }
 function randomOrder(lvl, forceTapau){
-  const r = Math.random;
-  const d = blankCup();
-  const miloChance = [0.12, 0.12, 0.2, 0.22][lvl];
-  if(r() < miloChance){
-    d.base = 'milo';
-    if(lvl >= 1 && r() < 0.6) d.ice = true;
-    if(lvl >= 2 && d.ice && r() < 0.55){ d.powder = true; if(lvl >= 3 && r() < 0.4) d.icecream = true; }
-  } else {
-    d.base = r() < 0.6 ? 'kopi' : 'teh';
-    d.milk = pick([null,'evap','none']);
-    if(lvl >= 1) d.sugar = pick(['kosong','siewdai','siewdai',null,'gadai']);
-    if(d.milk === null && d.sugar === 'kosong') d.sugar = 'siewdai';
-    if(lvl >= 2 && r() < 0.35) d.strength = pick(['gao','po']);
-    d.ice = lvl >= 1 && r() < (lvl >= 2 ? 0.4 : 0.25);
+  const r = Math.random, d = blankCup();
+  d.base = r() < 0.18 ? 'milo' : (r() < 0.6 ? 'kopi' : 'teh');
+  d.shots = 1;
+  if(d.base === 'milo' && lvl >= 2 && r() < 0.45){
+    Object.assign(d, { shots:2, milk:'condensed', sugar:2, ice:true });
+    d.cup = (forceTapau || r() < 0.3) ? 'takeaway' : 'normal';
+    return d;
   }
-  d.tapau = forceTapau || (lvl >= 2 && r() < 0.3);
+  d.milk = d.base === 'milo' ? pick(['condensed','condensed',null]) : pick(['condensed','evap',null]);
+  d.sugar = lvl >= 1 ? pick([0,1,1,2,3]) : 2;
+  if(d.milk === 'condensed' && d.sugar === 0) d.sugar = 1;
+  d.ice = lvl >= 1 && r() < (lvl >= 2 ? 0.45 : 0.25);
+  if(lvl >= 2 && r() < 0.35){ if(r() < 0.55) d.shots = 2; else d.water = true; }
+  d.cup = (forceTapau || (lvl >= 2 && r() < 0.35)) ? 'takeaway' : 'normal';
   return d;
 }
 const same = (a,b) => FIELDS.every(f => a[f] === b[f]);
 const GRIPE = {
-  milk:{ null:'Where my condensed milk? Normal one got milk! Don\'t anyhow add.', evap:'C means evaporated milk lah!', none:'O means NO milk lah!' },
-  sugar:{ kosong:'Kosong means NO sugar!', siewdai:'Siew dai = less sweet. Doctor say cut sugar!', null:'Normal sweet can already, why anyhow change?', gadai:'Ga dai! I want MORE sweet!' },
-  strength:{ gao:'So weak! I say gao, strong one!', po:'Wah so thick! Po means weak lah.', null:'Just normal strength can already.' },
+  milk:{ condensed:'Where my condensed milk?', evap:'C means evaporated milk lah!', null:'O means NO milk lah!' },
+  sugar:{ 0:'Kosong means NO sugar!', 1:'Siew dai = less sweet. Doctor say cut sugar!', 2:'Normal sweet can already, why anyhow?', 3:'Ga dai! I want MORE sweet!' },
+  shots:{ 2:'So weak! Gao means double lah!', 1:'Wah so thick! I never say gao.' },
+  water:{ true:'So thick! Po means add water lah!', false:'Why so watery? I never say po!' },
   ice:{ true:'Peng means ICE leh!', false:'Who ask for ice? I want hot!' },
-  tapau:{ true:'Tapau lah! I bringing go one!', false:'I drink here leh, why give me bag?' },
-  powder:{ true:'Dinosaur must got Milo mountain on top!', false:'Why got powder mountain? I never order.' },
-  icecream:{ true:'Godzilla got ice cream one leh!', false:'Ice cream for what? I never order.' },
+  cup:{ normal:'I drink here leh, why give me takeaway cup?', takeaway:'Tapau lah! I bringing go one!' },
 };
 function gripe(want, got, person){
+  if(!got.cup) return 'No cup?! You want me drink with my hands ah?';
   if(person.english) return pick(['Oh… sorry, this isn\'t quite what I ordered? 😅','Hmm, I don\'t think this is right… 😬','Is this… what I asked for?']);
   if(person.id === 'uncle' && Math.random() < 0.4) return '…… (stares at you in silence)';
-  if(want.base !== got.base) return `Eh, I order ${cap(want.base)} leh, this one ${cap(got.base)}!`;
+  if(want.base !== got.base) return `Eh, I order ${cap(want.base)} leh, this one ${got.base ? cap(got.base) : 'got no drink inside'}!`;
+  if(isDino(want) && got.shots !== 2) return 'Dinosaur must got double Milo leh!';
   for(const f of FIELDS.slice(1)) if(want[f] !== got[f]) return GRIPE[f][want[f]];
   return 'Wrong lah!';
 }
 function price(d){
-  if(d.base === 'milo') return d.icecream ? 4.5 : d.powder ? 3.2 : d.ice ? 2.2 : 1.9;
-  return (d.base === 'kopi' ? 1.4 : 1.5) + (d.ice ? 0.3 : 0) + (d.tapau ? 0.2 : 0);
+  if(isDino(d)) return 3.2 + (d.cup === 'takeaway' ? 0.2 : 0);
+  return ({ kopi:1.4, teh:1.5, milo:1.9 })[d.base] + (d.shots === 2 ? 0.3 : 0) + (d.ice ? 0.3 : 0) + (d.cup === 'takeaway' ? 0.2 : 0);
 }
 
 /* ---------- customers ---------- */
@@ -357,60 +335,59 @@ const sfx = {
 /* ---------- controls ---------- */
 function buildControls(){
   const c = $('#controls');
-  c.innerHTML = '';
-  for(const g of GROUPS){
-    const div = document.createElement('div');
-    div.className = 'grp'; div.dataset.key = g.key;
-    div.innerHTML = `<h3>${g.title}</h3><div class="opts">` +
-      g.opts.map(([v,l,e]) => `<button class="opt" data-k="${g.key}" data-v="${v}"><span class="e">${e}</span>${l}</button>`).join('') + '</div>';
-    c.appendChild(div);
-  }
-  const ex = document.createElement('div');
-  ex.className = 'grp';
-  ex.innerHTML = '<h3>5 · Extras</h3><div class="opts">' +
-    EXTRAS.map(([v,l,e]) => `<button class="opt" data-x="${v}"><span class="e">${e}</span>${l}</button>`).join('') + '</div>';
-  c.appendChild(ex);
-  c.addEventListener('click', e => {
+  const btn = (attr, v, l, e) => `<button class="opt" data-${attr}="${v}"><span class="e">${e}</span>${l}</button>`;
+  c.innerHTML = '<div class="grp"><h3>Ingredients</h3><div class="opts">' +
+    BASES.map(([v,l,e]) => `<button class="opt" data-base="${v}"><span class="e">${e}</span>${l}<span class="shots"></span></button>`).join('') +
+    MILKS.map(([v,l,e]) => btn('milk', v, l, e)).join('') +
+    '<button class="opt" id="sugarBtn"><span class="e">🥄</span>Sugar<span id="spoons"></span></button>' +
+    btn('water', '1', 'Water', '💧') + btn('ice', '1', 'Ice', '🧊') + '</div></div>' +
+    '<div class="grp"><h3>Cup</h3><div class="opts">' + CUPS.map(([v,l,e]) => btn('cup', v, l, e)).join('') + '</div></div>';
+  c.onclick = e => {
     const b = e.target.closest('.opt'); if(!b) return;
     sfx.click();
-    if(b.dataset.k){
-      cup[b.dataset.k] = cup[b.dataset.k] === b.dataset.v ? null : b.dataset.v;
-      if(b.dataset.k === 'base'){
-        if(cup.base === 'milo'){ cup.milk = null; cup.sugar = null; cup.strength = null; }
-        else { cup.powder = false; cup.icecream = false; }
-      }
-    } else cup[b.dataset.x] = !cup[b.dataset.x];
+    const d = b.dataset;
+    if(b.id === 'sugarBtn') cup.sugar = (cup.sugar + 1) % 4;
+    else if(d.base){
+      if(cup.base !== d.base){ cup.base = d.base; cup.shots = 1; }
+      else if(cup.shots === 1) cup.shots = 2;
+      else { cup.base = null; cup.shots = 0; }
+    }
+    else if(d.water) cup.water = !cup.water;
+    else if(d.milk) cup.milk = cup.milk === d.milk ? null : d.milk;
+    else if(d.cup) cup.cup = cup.cup === d.cup ? null : d.cup;
+    else if(d.ice) cup.ice = !cup.ice;
     renderCup();
-  });
+  };
 }
 const COLORS = {
-  kopi:{ none:'#3a2213', evap:'#7a4f2c', null:'#9a6a3f' },
-  teh: { none:'#8c3a12', evap:'#b8743f', null:'#cf9460' },
+  kopi:{ null:'#3a2213', evap:'#7a4f2c', condensed:'#9a6a3f' },
+  teh: { null:'#8c3a12', evap:'#b8743f', condensed:'#cf9460' },
+  milo:{ null:'#4a2e1c', evap:'#6b4630', condensed:'#6b4630' },
 };
 function renderCup(){
-  document.querySelectorAll('.opt[data-k]').forEach(b => b.classList.toggle('on', cup[b.dataset.k] === b.dataset.v));
-  document.querySelectorAll('.opt[data-x]').forEach(b => {
-    b.classList.toggle('on', !!cup[b.dataset.x]);
-    if(b.dataset.x === 'powder' || b.dataset.x === 'icecream') b.disabled = cup.base !== 'milo';
-  });
-  document.querySelectorAll('.grp[data-key]').forEach(g => {
-    const k = g.dataset.key;
-    g.classList.toggle('off', k !== 'base' && cup.base === 'milo');
-  });
+  for(const k of ['base','milk','cup']) document.querySelectorAll(`.opt[data-${k}]`).forEach(b => b.classList.toggle('on', cup[k] === b.dataset[k]));
+  document.querySelector('.opt[data-ice]').classList.toggle('on', cup.ice);
+  document.querySelector('.opt[data-water]').classList.toggle('on', cup.water);
+  document.querySelectorAll('.opt[data-base] .shots').forEach(x => x.textContent = (x.parentNode.dataset.base === cup.base && cup.shots === 2) ? ' ×2' : '');
+  $('#sugarBtn').classList.toggle('on', cup.sugar > 0);
+  $('#spoons').textContent = cup.sugar ? ' ×' + cup.sugar : '';
   const el = $('#cup'), liq = $('#liquid');
-  el.className = 'cup' + (cup.tapau ? ' bag' : cup.ice ? ' glass' : '');
-  if(cup.base){
-    liq.style.height = '78%';
-    liq.style.background = cup.base === 'milo' ? '#5e3b24' : COLORS[cup.base][cup.milk];
-    liq.style.filter = cup.base === 'milo' ? '' : cup.strength === 'gao' ? 'brightness(.78)' : cup.strength === 'po' ? 'brightness(1.25) saturate(.8)' : '';
-  } else { liq.style.height = '0'; }
-  $('#ice').style.display = cup.ice && cup.base ? 'block' : 'none';
-  $('#heap').style.display = cup.powder ? 'block' : 'none';
-  $('#scoop').style.display = cup.icecream ? 'block' : 'none';
+  el.className = 'cup' + (cup.cup === 'takeaway' ? ' bag' : cup.cup === 'normal' ? '' : ' nocup');
+  if(cup.base){ liq.style.height = '78%'; liq.style.background = COLORS[cup.base][cup.milk];
+    liq.style.filter = cup.shots === 2 ? 'brightness(.75)' : cup.water ? 'brightness(1.25) saturate(.7)' : ''; }
+  else if(cup.milk){ liq.style.height = '30%'; liq.style.background = '#f3ead8'; }
+  else liq.style.height = '0';
+  $('#ice').style.display = cup.ice ? 'block' : 'none';
+  const parts = [];
+  if(cup.base) parts.push(BASES.find(x => x[0] === cup.base)[1] + (cup.shots === 2 ? ' ×2' : ''));
+  if(cup.milk) parts.push(MILKS.find(x => x[0] === cup.milk)[1]);
+  if(cup.water) parts.push('Water');
+  if(cup.sugar) parts.push(`${cup.sugar} sugar`);
+  if(cup.ice) parts.push('Ice');
+  if(cup.cup) parts.push(CUPS.find(x => x[0] === cup.cup)[1]);
   const r = $('#readout');
-  if(!cup.base){ r.textContent = 'Pick a drink'; r.classList.add('hidden'); }
-  else if(G && G.sifu){ r.textContent = '??? (Sifu mode)'; r.classList.add('hidden'); }
-  else { r.textContent = nameOf(cup); r.classList.remove('hidden'); }
+  r.textContent = parts.length ? parts.join(' · ') : 'Empty. Start making something';
+  r.classList.toggle('hidden', !parts.length);
 }
 
 /* ---------- queue ---------- */
@@ -460,7 +437,7 @@ function removeCust(c){
 /* ---------- serve ---------- */
 function serve(){
   if(!G || G.over) return;
-  if(!cup.base){ toast('Serve empty cup ah? 🤨', 'bad'); sfx.bad(); return; }
+  if(!cup.base && !cup.milk){ toast('Serve air ah? 🤨', 'bad'); sfx.bad(); return; }
   const c = G.queue.find(x => x.id === G.sel);
   if(!c){ toast('Nobody waiting leh. Drink it yourself lor. ☕'); cup = blankCup(); renderCup(); return; }
   if(same(c.order, cup)){
@@ -541,6 +518,7 @@ function start(){
   $('#endScreen').classList.add('hide');
   G = { t:0, money:0, served:0, wrong:0, streak:0, best:0, walkouts:0, queue:[], sel:null, nextSpawn:0.6, id:0, over:false, sifu: $('#sifu').checked };
   cup = blankCup(); renderCup(); renderQueue(); updateHUD();
+  $('#dictBtn').style.display = G.sifu ? 'none' : ''; $('#drawer').classList.remove('open');
   last = performance.now();
   requestAnimationFrame(loop);
 }
@@ -560,19 +538,19 @@ function end(){
   $('#endScreen').classList.remove('hide');
 }
 function dictHTML(){
-  return `<b>Kopi</b><span>coffee + condensed milk (sweet). Plain = don't tap anything else!</span>
-  <b>Teh</b><span>tea + condensed milk</span>
-  <b>O</b><span>no milk, sugar only</span>
-  <b>C</b><span>evaporated milk + sugar</span>
+  return `<b>Kopi / Teh / Milo</b><span>coffee / tea / Milo, with condensed milk</span>
+  <b>O</b><span>no milk at all</span>
+  <b>C</b><span>evaporated milk instead</span>
   <b>Kosong</b><span>no sugar</span>
-  <b>Siew dai</b><span>less sweet</span>
-  <b>Ga dai</b><span>extra sweet</span>
-  <b>Gao / Po</b><span>strong / weak</span>
-  <b>Peng</b><span>iced</span>
-  <b>Tapau</b><span>takeaway (in the plastic bag with a string!)</span>
-  <b>Milo Dinosaur</b><span>Milo peng + mountain of Milo powder</span>
-  <b>Milo Godzilla</b><span>Dinosaur + ice cream</span>
-  <span class="ex"><b>Kopi O Kosong Peng</b> = black coffee, no sugar, iced. Tourists order in English, so you have to translate!</span>`;
+  <b>Siew dai</b><span>less sweet (1 spoon)</span>
+  <b><i>(nothing said)</i></b><span>normal sweet (2 spoons)</span>
+  <b>Ga dai</b><span>extra sweet (3 spoons)</span>
+  <b>Gao</b><span>strong: double shot (tap the drink twice)</span>
+  <b>Po</b><span>weak: add water</span>
+  <b>Peng</b><span>with ice</span>
+  <b>Tapau</b><span>takeaway cup (otherwise a normal cup)</span>
+  <b>Milo Dinosaur</b><span>Milo, double shot, condensed milk, normal sweet, ice</span>
+  <span class="ex"><b>Kopi O Kosong Peng</b> = coffee, no milk, no sugar, ice, normal cup. Tourists order in English, so you have to translate!</span>`;
 }
 
 /* ---------- wire up ---------- */

@@ -5,7 +5,17 @@ import { BASES, MILKS, CUPS, blankCup, FIELDS, nameOf, englishOf, randomOrder, s
 import { PEOPLE, P, HAPPY, LEAVE, LESSONS, RANKS, dictHTML } from './content.js';
 import { sfx, toggleMute } from './sound.js';
 
-const GAME_LEN = 120, MAX_WALKOUTS = 3;
+const GAME_LEN = 150, MAX_WALKOUTS = 3;
+
+// Pacing: the shift starts slow (one customer at a time, lots of patience) and ramps up.
+// until = seconds into the shift; maxQ = max customers waiting; gap = seconds between arrivals;
+// pat = base patience in seconds (scaled per customer type).
+const STAGES = [
+  { until: 40,       maxQ: 1, gap: [2, 3],   pat: 60, msg: null },
+  { until: 75,       maxQ: 2, gap: [9, 11],  pat: 40, msg: '🕗 More customers coming in… a bit faster now!' },
+  { until: 110,      maxQ: 3, gap: [6, 8],   pat: 30, msg: '🏢 Office crowd! Faster!' },
+  { until: Infinity, maxQ: 4, gap: [4, 5.5], pat: 22, msg: '🔥 Peak rush! Chiong ah!' },
+];
 
 /* ---------- state ---------- */
 let G = null, cup = blankCup(), last = 0;
@@ -82,13 +92,13 @@ function renderCup(){
 }
 
 /* ---------- queue ---------- */
-function level(){ const t = G.t; return t < 25 ? 0 : t < 55 ? 1 : t < 85 ? 2 : 3; }
+function level(){ return STAGES.findIndex(s => G.t < s.until); }
 function spawn(){
   const lvl = level();
   const pool = PEOPLE.filter(p => (p.minLvl || 0) <= lvl);
   const person = pick(pool);
   const order = randomOrder(lvl, person.tapau);
-  const pat = [26, 23, 21, 18][lvl] * person.pat + (order.base === 'milo' ? 2 : 0);
+  const pat = STAGES[lvl].pat * person.pat + (order.base === 'milo' ? 2 : 0);
   const say = pick(person.lines).replace('{o}', person.english ? englishOf(order) : `<b>${nameOf(order)}</b>`);
   const c = { id: ++G.id, person, order, max: pat, left: pat, say, mad: null };
   G.queue.push(c);
@@ -122,6 +132,7 @@ function updateBars(){
 function removeCust(c){
   G.queue = G.queue.filter(x => x !== c);
   if(G.sel === c.id) G.sel = G.queue[0] ? G.queue[0].id : null;
+  if(!G.tutorial && !G.queue.length) G.nextSpawn = Math.max(G.nextSpawn, 1.5); // tiny breather
   renderQueue();
 }
 
@@ -165,15 +176,15 @@ function loop(now){
   if(!G || G.over) return;
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   G.t += dt;
-  const lvl = level();
+  const lvl = level(), stage = STAGES[lvl];
+  if(lvl !== G.lvl){ G.lvl = lvl; if(stage.msg) toast(stage.msg); }
   G.nextSpawn -= dt;
-  const maxQ = lvl >= 2 ? 4 : 3;
-  if(G.nextSpawn <= 0 && G.queue.length < maxQ){
+  if(G.nextSpawn <= 0 && G.queue.length < stage.maxQ){
     spawn();
-    const [a, b] = [[5, 7], [4, 5.5], [3.2, 4.5], [2.6, 3.6]][lvl];
+    const [a, b] = stage.gap;
     G.nextSpawn = a + Math.random() * (b - a);
   }
-  if(!G.queue.length && G.nextSpawn > 1.2) G.nextSpawn = 1.2;
+  if(!G.queue.length && G.nextSpawn > 2) G.nextSpawn = 2;
   for(const c of [...G.queue]){
     c.left -= dt;
     if(c.left <= 0){
@@ -253,12 +264,23 @@ function finishTutorial(){
 function start(){
   $('#startScreen').classList.add('hide');
   $('#endScreen').classList.add('hide');
-  G = { t:0, money:0, served:0, wrong:0, streak:0, best:0, walkouts:0, queue:[], sel:null, nextSpawn:0.6, id:0, over:false, sifu: $('#sifu').checked };
+  G = { t:0, money:0, served:0, wrong:0, streak:0, best:0, walkouts:0, queue:[], sel:null, nextSpawn:0.6, id:0, lvl:0, over:false, sifu: $('#sifu').checked };
   cup = blankCup(); renderCup(); renderQueue(); updateHUD();
   $('#dictBtn').style.display = G.sifu ? 'none' : ''; $('#drawer').classList.remove('open');
   $('#tutBox').classList.add('hide'); $('#tutDone').classList.add('hide'); clearHints();
   last = performance.now();
   requestAnimationFrame(loop);
+}
+function goHome(){
+  if(G){ G.over = true; G.tutorial = false; G.queue = []; }
+  ['endScreen','tutDone','tutBox'].forEach(id => $('#' + id).classList.add('hide'));
+  ['hMoney','hStreak','hLives','dictBtn'].forEach(id => $('#' + id).style.display = '');
+  $('#drawer').classList.remove('open');
+  clearHints();
+  cup = blankCup(); renderCup();
+  $('#queue').innerHTML = '<div class="empty-q">Shop is closed. Open it when you\'re ready.</div>';
+  $('#hTime').textContent = `⏱ ${Math.floor(GAME_LEN / 60)}:${String(GAME_LEN % 60).padStart(2, '0')}`;
+  $('#startScreen').classList.remove('hide');
 }
 function end(){
   G.over = true;
@@ -287,6 +309,8 @@ $('#skipTut').onclick = () => { G.step = LESSONS.length - 1; nextLesson(); };
 $('#tutGo').onclick = start;
 $('#tutAgain').onclick = startTutorial;
 $('#againBtn').onclick = start;
+$('#homeBtn').onclick = goHome;
+$('#tutHome').onclick = goHome;
 $('#serveBtn').onclick = serve;
 $('#trashBtn').onclick = () => { cup = blankCup(); renderCup(); sfx.click(); };
 $('#dictBtn').onclick = () => $('#drawer').classList.toggle('open');

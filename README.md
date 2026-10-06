@@ -1,6 +1,6 @@
 # ☕ Kopi Order Master
 
-A silly kopitiam game. Decode Singlish kopi orders ("Kopi O kosong peng!", "Teh C siew dai tapau!"), build them from raw ingredients, and survive the 2-minute morning rush before 3 customers walk off.
+A silly kopitiam game. Decode Singlish kopi orders ("Kopi O kosong peng!", "Teh C siew dai tapau!"), build them from raw ingredients, and survive the 2½-minute morning rush (slow start, then it picks up) before 3 customers walk off.
 
 ## Project layout
 

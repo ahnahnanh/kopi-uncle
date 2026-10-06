@@ -46,10 +46,10 @@ export const LESSONS = [
 /* ---------- end-of-shift ranks: [min drinks served, title, blurb] ---------- */
 export const RANKS = [
   [0, 'Blur Sotong 🦑', 'You and the kopi sock are not on speaking terms yet.'],
-  [5, 'Kopitiam Newbie 🐣', 'The aunties are already gossiping about you. Could be worse.'],
-  [10, 'Cookhouse NSF 🪖', 'Steady. You can survive a morning rush, mostly.'],
-  [16, 'Kopi Auntie Apprentice 👵', 'The regulars nod at you now. High praise.'],
-  [22, 'Kopi Sifu 🏆', 'Uncle Lim smiled. Nobody has seen this since 1987.'],
+  [4, 'Kopitiam Newbie 🐣', 'The aunties are already gossiping about you. Could be worse.'],
+  [8, 'Cookhouse NSF 🪖', 'Steady. You can survive a morning rush, mostly.'],
+  [13, 'Kopi Auntie Apprentice 👵', 'The regulars nod at you now. High praise.'],
+  [18, 'Kopi Sifu 🏆', 'Uncle Lim smiled. Nobody has seen this since 1987.'],
 ];
 
 /* ---------- Kopi 101 cheat sheet ---------- */

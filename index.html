@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kopi Order Master</title>
+<meta name="description" content="Survive the kopitiam morning rush. Decode Singlish kopi orders before the uncles lose patience.">
+<meta property="og:title" content="Kopi Order Master ☕">
+<meta property="og:description" content="Kopi O kosong peng? Teh C siew dai tapau? Survive the kopitiam morning rush.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#1f6f50; --green-d:#134a35; --cream:#fdf3e1; --paper:#fffaf0;
+  --red:#c8382e; --red-d:#9e2a22; --yellow:#f5c542; --ink:#2a1a10; --muted:#7a6656;
+  --ok:#2e9e5b; --warn:#e2a019; --bad:#d64131;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:"Baloo 2",system-ui,sans-serif; color:var(--ink); min-height:100vh;
+  background:repeating-conic-gradient(#d9ebdf 0 25%,#f4faf6 0 50%) 0 0/32px 32px;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;cursor:pointer;color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:12px 16px 32px}
+
+/* signboard */
+.sign{
+  background:var(--red); color:var(--yellow); border:4px solid var(--yellow);
+  border-radius:12px; padding:6px 14px; box-shadow:0 4px 0 var(--red-d);
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+.sign h1{margin:0;font-size:clamp(20px,4vw,30px);font-weight:800;letter-spacing:.5px;line-height:1.1}
+.sign h1 small{display:block;font-size:13px;color:#ffe9b0;font-weight:600;letter-spacing:0}
+.hud{display:flex;gap:8px;flex-wrap:wrap}
+.hud span{background:#fff3;color:#fff;border-radius:999px;padding:2px 10px;font-weight:700;font-size:15px;white-space:nowrap}
+.iconbtn{background:#fff3;border:0;border-radius:999px;padding:2px 10px;color:#fff;font-weight:700}
+
+/* queue */
+.queue{display:flex;gap:10px;margin:14px 0;min-height:168px;overflow-x:auto;padding:4px 2px 8px}
+.empty-q{align-self:center;color:var(--muted);font-weight:600;margin:auto}
+.cust{
+  flex:0 0 200px; background:var(--paper); border:3px solid #e6d6bb; border-radius:14px;
+  padding:8px 10px; text-align:left; position:relative; transition:transform .12s,border-color .12s;
+  display:flex;flex-direction:column;gap:4px; box-shadow:0 3px 0 #e6d6bb;
+}
+.cust:hover{transform:translateY(-2px)}
+.cust.sel{border-color:var(--green);box-shadow:0 3px 0 var(--green-d)}
+.cust.sel::after{content:"SERVING";position:absolute;top:-10px;right:10px;background:var(--green);color:#fff;font-size:11px;font-weight:800;padding:0 8px;border-radius:999px}
+.cust .who{display:flex;align-items:center;gap:6px}
+.cust .face{font-size:34px;line-height:1}
+.cust .nm{font-size:13px;color:var(--muted);font-weight:600;line-height:1.1}
+.bubble{background:#fff;border:2px solid #eadcc4;border-radius:10px;padding:4px 8px;font-size:15px;line-height:1.25;flex:1}
+.bubble b{color:var(--red-d)}
+.bubble.mad{background:#ffe9e5;border-color:#f3b4a9}
+.pbar{height:7px;background:#eee2cc;border-radius:99px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--ok);border-radius:99px}
+.cust.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+
+/* station */
+.station{display:grid;grid-template-columns:250px 1fr;gap:14px;
+  background:linear-gradient(135deg,#fbfbf8,#ecebe6 60%,#f7f6f2); border:3px solid #d5d2c8;border-radius:16px;padding:14px;
+  box-shadow:0 4px 0 #c9c5b9}
+.cupzone{display:flex;flex-direction:column;align-items:center;gap:8px}
+.cupstage{height:190px;width:100%;display:flex;align-items:flex-end;justify-content:center;position:relative}
+.cup{position:relative;width:110px;height:120px;border:4px solid #fff;border-top:0;border-radius:0 0 34px 34px;
+  background:#ffffffaa; box-shadow:inset 0 0 0 2px #cfcfcf,0 6px 0 -2px #bbb; overflow:visible;transition:all .2s}
+.cup .handle{position:absolute;right:-30px;top:20px;width:30px;height:46px;border:7px solid #f4f4f4;border-left:0;border-radius:0 24px 24px 0;box-shadow:2px 0 0 #cfcfcf}
+.cup.glass{width:92px;height:150px;border-radius:0 0 12px 12px;background:#e8f6ff66;box-shadow:inset 0 0 0 2px #a9cde3}
+.cup.glass .handle{display:none}
+.cup.bag{width:118px;height:140px;border:2px solid #d9ecf5;border-radius:18px 18px 44px 44px;background:#eaf6fc88;box-shadow:inset 0 0 0 1px #b8d8e8}
+.cup.bag .handle{display:none}
+.cup.bag::before{content:"";position:absolute;left:50%;top:-58px;width:62px;height:62px;margin-left:-31px;border:4px solid #f0c75a;border-bottom:0;border-radius:50% 50% 0 0}
+.liquid{position:absolute;left:3px;right:3px;bottom:3px;height:0;border-radius:0 0 28px 28px;transition:height .35s,background .25s,filter .25s}
+.cup.glass .liquid{border-radius:0 0 8px 8px}
+.cup.bag .liquid{border-radius:10px 10px 40px 40px}
+.foam{position:absolute;left:0;right:0;top:0;height:8px;background:#fff4;border-radius:4px}
+.ice{position:absolute;inset:auto 0 40% 0;text-align:center;font-size:22px;letter-spacing:-6px;display:none}
+.heap{position:absolute;left:50%;top:-34px;width:104px;height:44px;margin-left:-52px;background:radial-gradient(ellipse at 50% 100%,#6b4a2f 60%,transparent 62%);display:none}
+.heap::after{content:"";position:absolute;left:22px;right:22px;bottom:16px;height:30px;border-radius:50% 50% 10% 10%;background:#7a5536}
+.scoop{position:absolute;left:50%;top:-64px;margin-left:-20px;font-size:40px;display:none}
+.readout{font-weight:800;font-size:18px;text-align:center;min-height:28px;color:var(--green-d)}
+.readout.hidden{color:var(--muted);font-weight:600}
+.actions{display:flex;gap:8px;width:100%}
+.serve{flex:2;background:var(--green);color:#fff;border:0;border-radius:12px;padding:10px;font-weight:800;font-size:19px;box-shadow:0 4px 0 var(--green-d)}
+.serve:active{transform:translateY(3px);box-shadow:0 1px 0 var(--green-d)}
+.trash{flex:1;background:#fff;border:2px solid #d5d2c8;border-radius:12px;font-weight:700;box-shadow:0 4px 0 #c9c5b9}
+.kbd{font-size:12px;color:var(--muted)}
+
+.controls{display:flex;flex-direction:column;gap:10px}
+.grp{transition:opacity .2s}
+.grp.off{opacity:.35;pointer-events:none}
+.grp h3{margin:0 0 4px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{background:#fff;border:2px solid #d9d4c7;border-radius:10px;padding:5px 11px;font-weight:700;font-size:15px;
+  box-shadow:0 3px 0 #cfc9ba;transition:background .1s}
+.opt:active{transform:translateY(2px);box-shadow:0 1px 0 #cfc9ba}
+.opt.on{background:var(--yellow);border-color:#c99a14;box-shadow:0 3px 0 #b8890d}
+.opt .e{margin-right:4px}
+.opt[disabled]{opacity:.35;pointer-events:none}
+
+/* toasts */
+.toasts{position:fixed;left:50%;top:84px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;z-index:30;pointer-events:none;width:min(92vw,460px)}
+.toast{background:var(--ink);color:#fff;padding:6px 14px;border-radius:999px;font-weight:700;animation:toast 2s forwards;text-align:center}
+.toast.good{background:var(--ok)} .toast.bad{background:var(--bad)}
+@keyframes toast{0%{opacity:0;transform:translateY(-8px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0;transform:translateY(-6px)}}
+
+/* overlays */
+.overlay{position:fixed;inset:0;background:#134a35d9;display:flex;align-items:center;justify-content:center;padding:16px;z-index:40;overflow:auto}
+.card{background:var(--cream);border:4px solid var(--yellow);border-radius:18px;max-width:640px;width:100%;padding:20px 22px;box-shadow:0 8px 0 #0004}
+.card h2{margin:0;font-size:clamp(28px,6vw,42px);line-height:1;color:var(--red)}
+.card p{margin:8px 0}
+.big{background:var(--red);color:var(--yellow);border:0;border-radius:14px;padding:10px 26px;font-size:22px;font-weight:800;box-shadow:0 5px 0 var(--red-d)}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--red-d)}
+.ghost{background:#fff;border:2px solid #d5c6a8;border-radius:12px;padding:8px 16px;font-weight:700}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.dict{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;background:#fff;border-radius:12px;padding:10px 14px;font-size:15px;border:2px solid #eadcc4}
+.dict b{color:var(--red-d)}
+.dict .ex{grid-column:1/-1;border-top:1px dashed #e0cfb0;margin-top:6px;padding-top:6px;color:var(--muted)}
+label.tog{display:flex;gap:8px;align-items:center;font-weight:600}
+label.tog input{width:20px;height:20px;accent-color:var(--green)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}
+.stats div{background:#fff;border-radius:12px;padding:8px 12px;border:2px solid #eadcc4}
+.stats b{display:block;font-size:24px;line-height:1.1}
+.rank{font-size:26px;font-weight:800;color:var(--green-d)}
+.drawer{position:fixed;right:16px;bottom:16px;z-index:35;max-width:360px;width:calc(100% - 32px);display:none}
+.drawer.open{display:block}
+.drawer .dict{box-shadow:0 6px 20px #0003}
+.hide{display:none!important}
+
+@media (max-width:720px){
+  .station{grid-template-columns:1fr}
+  .cupstage{height:150px}
+  .kbd{display:none}
+  .cust{flex-basis:170px}
+  .opt{padding:5px 9px;font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="sign">
+    <h1>☕ KOPI ORDER MASTER<small>Ah Huat Kopitiam · since 1987</small></h1>
+    <div class="hud">
+      <span id="hTime">⏱ 2:00</span>
+      <span id="hMoney">💰 $0.00</span>
+      <span id="hStreak">🔥 0</span>
+      <span id="hLives">❤️❤️❤️</span>
+      <button class="iconbtn" id="dictBtn" title="Kopi 101 cheat sheet">📖 Kopi 101</button>
+      <button class="iconbtn" id="muteBtn" title="Sound">🔊</button>
+    </div>
+  </header>
+
+  <section class="queue" id="queue"><div class="empty-q">No customers yet… enjoy the peace while it lasts.</div></section>
+
+  <section class="station">
+    <div class="cupzone">
+      <div class="cupstage">
+        <div class="cup" id="cup">
+          <div class="handle"></div>
+          <div class="liquid" id="liquid"><div class="foam"></div></div>
+          <div class="ice" id="ice">🧊🧊🧊</div>
+          <div class="heap" id="heap"></div>
+          <div class="scoop" id="scoop">🍨</div>
+        </div>
+      </div>
+      <div class="readout" id="readout">Pick a drink</div>
+      <div class="actions">
+        <button class="serve" id="serveBtn">SERVE ✋</button>
+        <button class="trash" id="trashBtn">Pour away</button>
+      </div>
+      <div class="kbd">Enter = serve · Esc = pour away · Tap a customer to pick who you're serving</div>
+    </div>
+    <div class="controls" id="controls"></div>
+  </section>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<div class="drawer" id="drawer"></div>
+
+<!-- start screen -->
+<div class="overlay" id="startScreen">
+  <div class="card">
+    <h2>Kopi Order Master</h2>
+    <p>It's 7am at Ah Huat Kopitiam. The uncle who usually makes the drinks has "gone to the toilet" and hasn't come back. Now you're on the counter.</p>
+    <p><b>How to play:</b> read the order, make the drink, hit <b>Serve</b>. Get it wrong and they'll let you know. If 3 customers walk off, you're fired. Survive 2 minutes.</p>
+    <div class="dict" id="dictStart"></div>
+    <div class="row">
+      <button class="big" id="startBtn">Open shop ▶</button>
+      <label class="tog"><input type="checkbox" id="sifu"> Sifu mode: hide the drink name (×1.5 money)</label>
+    </div>
+  </div>
+</div>
+
+<!-- end screen -->
+<div class="overlay hide" id="endScreen">
+  <div class="card">
+    <h2 id="endTitle">Shop closed!</h2>
+    <p id="endReason"></p>
+    <div class="rank" id="endRank"></div>
+    <div class="stats">
+      <div>Drinks served<b id="sServed">0</b></div>
+      <div>Money made<b id="sMoney">$0</b></div>
+      <div>Best streak<b id="sStreak">0</b></div>
+      <div>Wrong drinks<b id="sWrong">0</b></div>
+    </div>
+    <div class="row">
+      <button class="big" id="againBtn">Again! ↻</button>
+      <button class="ghost" id="shareBtn">Copy brag text</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const cap = s => s[0].toUpperCase() + s.slice(1);
+const GAME_LEN = 120, MAX_WALKOUTS = 3;
+
+/* ---------- drink model ---------- */
+const GROUPS = [
+  { key:'base', title:'1 · Drink', opts:[['kopi','Kopi','☕'],['teh','Teh','🍵'],['milo','Milo','🍫']] },
+  { key:'milk', title:'2 · Milk', opts:[['condensed','Condensed','🥫'],['evap','Evaporated (C)','🥛'],['none','No milk (O)','🚫']] },
+  { key:'sugar', title:'3 · Sugar', opts:[['kosong','Kosong','∅'],['siewdai','Siew dai','▫'],['normal','Normal','▫▫'],['gadai','Ga dai','▫▫▫']] },
+  { key:'strength', title:'4 · Strength', opts:[['po','Po (weak)','💧'],['normal','Normal','☕'],['gao','Gao (strong)','💪']] },
+];
+const EXTRAS = [['ice','Peng (ice)','🧊'],['tapau','Tapau (bag)','🛍️'],['powder','Milo mountain','⛰️'],['icecream','Ice cream','🍨']];
+const blankCup = () => ({ base:null, milk:'condensed', sugar:'normal', strength:'normal', ice:false, tapau:false, powder:false, icecream:false });
+const FIELDS = ['base','milk','sugar','strength','ice','tapau','powder','icecream'];
+
+function nameOf(d){
+  if(!d.base) return '';
+  let n;
+  if(d.base === 'milo'){
+    if(d.icecream && d.powder && d.ice) n = 'Milo Godzilla';
+    else if(d.powder && d.ice && !d.icecream) n = 'Milo Dinosaur';
+    else n = 'Milo' + (d.ice ? ' Peng' : '') + (d.powder ? ' + powder' : '') + (d.icecream ? ' + ice cream' : '');
+  } else {
+    const p = [cap(d.base)];
+    if(d.milk === 'none') p.push('O');
+    if(d.milk === 'evap') p.push('C');
+    if(d.strength === 'gao') p.push('Gao');
+    if(d.strength === 'po') p.push('Po');
+    if(d.sugar === 'kosong') p.push('Kosong');
+    if(d.sugar === 'siewdai') p.push('Siew Dai');
+    if(d.sugar === 'gadai') p.push('Ga Dai');
+    if(d.ice) p.push('Peng');
+    n = p.join(' ');
+  }
+  if(d.tapau) n += ' Tapau';
+  return n;
+}
+function englishOf(d){
+  if(d.base === 'milo'){
+    let s = d.icecream ? 'an iced Milo with a big pile of Milo powder AND a scoop of ice cream on top'
+          : d.powder ? 'an iced Milo with a mountain of Milo powder on top'
+          : (d.ice ? 'an iced Milo' : 'a hot Milo');
+    return s + (d.tapau ? ', to go' : '');
+  }
+  const bits = [];
+  if(d.strength === 'gao') bits.push('strong');
+  if(d.strength === 'po') bits.push('weak');
+  bits.push(d.ice ? 'iced' : 'hot');
+  if(d.milk === 'none') bits.push('black');
+  let s = 'a ' + bits.join(' ') + ' ' + (d.base === 'kopi' ? 'coffee' : 'tea');
+  const tail = [];
+  if(d.milk === 'condensed') tail.push('with condensed milk');
+  if(d.milk === 'evap') tail.push('with evaporated milk');
+  if(d.sugar === 'kosong') tail.push('no sugar');
+  if(d.sugar === 'siewdai') tail.push('less sweet');
+  if(d.sugar === 'gadai') tail.push('extra sweet');
+  if(d.sugar === 'normal' && d.milk !== 'condensed') tail.push('with sugar');
+  if(d.tapau) tail.push('to go');
+  return s + (tail.length ? ', ' + tail.join(', ') : '');
+}
+function randomOrder(lvl, forceTapau){
+  const r = Math.random;
+  const d = blankCup();
+  const miloChance = [0.12, 0.12, 0.2, 0.22][lvl];
+  if(r() < miloChance){
+    d.base = 'milo';
+    if(lvl >= 1 && r() < 0.6) d.ice = true;
+    if(lvl >= 2 && d.ice && r() < 0.55){ d.powder = true; if(lvl >= 3 && r() < 0.4) d.icecream = true; }
+  } else {
+    d.base = r() < 0.6 ? 'kopi' : 'teh';
+    d.milk = pick(['condensed','evap','none']);
+    if(lvl >= 1) d.sugar = pick(['kosong','siewdai','siewdai','normal','gadai']);
+    if(d.milk === 'condensed' && d.sugar === 'kosong') d.sugar = 'siewdai';
+    if(lvl >= 2 && r() < 0.35) d.strength = pick(['gao','po']);
+    d.ice = lvl >= 1 && r() < (lvl >= 2 ? 0.4 : 0.25);
+  }
+  d.tapau = forceTapau || (lvl >= 2 && r() < 0.3);
+  return d;
+}
+const same = (a,b) => FIELDS.every(f => a[f] === b[f]);
+const GRIPE = {
+  milk:{ condensed:'Where my condensed milk? Normal one got milk!', evap:'C means evaporated milk lah!', none:'O means NO milk lah!' },
+  sugar:{ kosong:'Kosong means NO sugar!', siewdai:'Siew dai = less sweet. Doctor say cut sugar!', normal:'Normal sweet can already, why anyhow change?', gadai:'Ga dai! I want MORE sweet!' },
+  strength:{ gao:'So weak! I say gao, strong one!', po:'Wah so thick! Po means weak lah.', normal:'Just normal strength can already.' },
+  ice:{ true:'Peng means ICE leh!', false:'Who ask for ice? I want hot!' },
+  tapau:{ true:'Tapau lah! I bringing go one!', false:'I drink here leh, why give me bag?' },
+  powder:{ true:'Dinosaur must got Milo mountain on top!', false:'Why got powder mountain? I never order.' },
+  icecream:{ true:'Godzilla got ice cream one leh!', false:'Ice cream for what? I never order.' },
+};
+function gripe(want, got, person){
+  if(person.english) return pick(['Oh… sorry, this isn\'t quite what I ordered? 😅','Hmm, I don\'t think this is right… 😬','Is this… what I asked for?']);
+  if(person.id === 'uncle' && Math.random() < 0.4) return '…… (stares at you in silence)';
+  if(want.base !== got.base) return `Eh, I order ${cap(want.base)} leh, this one ${cap(got.base)}!`;
+  for(const f of FIELDS.slice(1)) if(want[f] !== got[f]) return GRIPE[f][want[f]];
+  return 'Wrong lah!';
+}
+function price(d){
+  if(d.base === 'milo') return d.icecream ? 4.5 : d.powder ? 3.2 : d.ice ? 2.2 : 1.9;
+  return (d.base === 'kopi' ? 1.4 : 1.5) + (d.ice ? 0.3 : 0) + (d.tapau ? 0.2 : 0);
+}
+
+/* ---------- customers ---------- */
+const PEOPLE = [
+  { id:'uncle', face:'👴', name:'Uncle Lim', lines:['Boss, {o}.','{o}. One.','Ah boy, {o} ah.'], pat:1.1 },
+  { id:'auntie', face:'👵', name:'Auntie Mei', lines:['{o}, faster hor!','Eh, {o}. Don\'t anyhow make ah.'], pat:0.95 },
+  { id:'office', face:'🧑‍💼', name:'Office guy', lines:['{o}, quick quick, got meeting!','{o}. Can PayNow right?'], pat:0.8 },
+  { id:'student', face:'🧑‍🎓', name:'Poly student', lines:['Uncle, {o} please.','{o}… exam later, need power.'], pat:1 },
+  { id:'nsf', face:'🪖', name:'NSF', lines:['{o}! Book out liao, shiok.','{o}. Sergeant waiting, chop chop.'], pat:0.85 },
+  { id:'rider', face:'🛵', name:'Delivery rider', lines:['{o}. Order for Block 123!','{o}, rush ah, rain coming.'], pat:0.75, tapau:true },
+  { id:'tourist', face:'📸', name:'Tourist', lines:['Hi! Could I get {o}, please?','Um, hello! {o}? Thank you!'], pat:1.45, english:true, minLvl:1 },
+];
+const HAPPY = ['Shiok! 😋','Steady lah! 👍','Power! 💪','Wah, nice! 🤤','Ho seh liao!'];
+const LEAVE = ['Wah lau, so slow!','Forget it lah, go next shop.','Aiyo, I late already!','Walk off liao. 😤'];
+
+/* ---------- state ---------- */
+let G = null, cup = blankCup(), last = 0, muted = false;
+
+/* ---------- sound ---------- */
+let ac;
+function beep(f, d = 0.12, type = 'sine', v = 0.07, delay = 0){
+  if(muted) return;
+  try{
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
+  }catch(e){}
+}
+const sfx = {
+  click: () => beep(520, .05, 'triangle', .04),
+  good: () => { beep(880, .1); beep(1320, .18, 'sine', .07, .09); },
+  bad: () => beep(140, .3, 'square', .04),
+  leave: () => { beep(330, .15, 'sawtooth', .04); beep(220, .25, 'sawtooth', .04, .14); },
+};
+
+/* ---------- controls ---------- */
+function buildControls(){
+  const c = $('#controls');
+  c.innerHTML = '';
+  for(const g of GROUPS){
+    const div = document.createElement('div');
+    div.className = 'grp'; div.dataset.key = g.key;
+    div.innerHTML = `<h3>${g.title}</h3><div class="opts">` +
+      g.opts.map(([v,l,e]) => `<button class="opt" data-k="${g.key}" data-v="${v}"><span class="e">${e}</span>${l}</button>`).join('') + '</div>';
+    c.appendChild(div);
+  }
+  const ex = document.createElement('div');
+  ex.className = 'grp';
+  ex.innerHTML = '<h3>5 · Extras</h3><div class="opts">' +
+    EXTRAS.map(([v,l,e]) => `<button class="opt" data-x="${v}"><span class="e">${e}</span>${l}</button>`).join('') + '</div>';
+  c.appendChild(ex);
+  c.addEventListener('click', e => {
+    const b = e.target.closest('.opt'); if(!b) return;
+    sfx.click();
+    if(b.dataset.k){
+      cup[b.dataset.k] = b.dataset.v;
+      if(b.dataset.k === 'base'){
+        if(cup.base === 'milo'){ cup.milk = 'condensed'; cup.sugar = 'normal'; cup.strength = 'normal'; }
+        else { cup.powder = false; cup.icecream = false; }
+      }
+    } else cup[b.dataset.x] = !cup[b.dataset.x];
+    renderCup();
+  });
+}
+const COLORS = {
+  kopi:{ none:'#3a2213', evap:'#7a4f2c', condensed:'#9a6a3f' },
+  teh: { none:'#8c3a12', evap:'#b8743f', condensed:'#cf9460' },
+};
+function renderCup(){
+  document.querySelectorAll('.opt[data-k]').forEach(b => b.classList.toggle('on', cup[b.dataset.k] === b.dataset.v));
+  document.querySelectorAll('.opt[data-x]').forEach(b => {
+    b.classList.toggle('on', !!cup[b.dataset.x]);
+    if(b.dataset.x === 'powder' || b.dataset.x === 'icecream') b.disabled = cup.base !== 'milo';
+  });
+  document.querySelectorAll('.grp[data-key]').forEach(g => {
+    const k = g.dataset.key;
+    g.classList.toggle('off', k !== 'base' && cup.base === 'milo');
+  });
+  const el = $('#cup'), liq = $('#liquid');
+  el.className = 'cup' + (cup.tapau ? ' bag' : cup.ice ? ' glass' : '');
+  if(cup.base){
+    liq.style.height = '78%';
+    liq.style.background = cup.base === 'milo' ? '#5e3b24' : COLORS[cup.base][cup.milk];
+    liq.style.filter = cup.base === 'milo' ? '' : cup.strength === 'gao' ? 'brightness(.78)' : cup.strength === 'po' ? 'brightness(1.25) saturate(.8)' : '';
+  } else { liq.style.height = '0'; }
+  $('#ice').style.display = cup.ice && cup.base ? 'block' : 'none';
+  $('#heap').style.display = cup.powder ? 'block' : 'none';
+  $('#scoop').style.display = cup.icecream ? 'block' : 'none';
+  const r = $('#readout');
+  if(!cup.base){ r.textContent = 'Pick a drink'; r.classList.add('hidden'); }
+  else if(G && G.sifu){ r.textContent = '??? (Sifu mode)'; r.classList.add('hidden'); }
+  else { r.textContent = nameOf(cup); r.classList.remove('hidden'); }
+}
+
+/* ---------- queue ---------- */
+function level(){ const t = G.t; return t < 25 ? 0 : t < 55 ? 1 : t < 85 ? 2 : 3; }
+function spawn(){
+  const lvl = level();
+  const pool = PEOPLE.filter(p => (p.minLvl || 0) <= lvl);
+  const person = pick(pool);
+  const order = randomOrder(lvl, person.tapau);
+  const pat = [26, 23, 21, 18][lvl] * person.pat + (order.base === 'milo' ? 2 : 0);
+  const say = pick(person.lines).replace('{o}', person.english ? englishOf(order) : `<b>${nameOf(order)}</b>`);
+  const c = { id: ++G.id, person, order, max: pat, left: pat, say, mad: null };
+  G.queue.push(c);
+  if(!G.sel) G.sel = c.id;
+  renderQueue();
+}
+function renderQueue(){
+  const q = $('#queue');
+  if(!G.queue.length){ q.innerHTML = '<div class="empty-q">No customers right now. Catch your breath…</div>'; return; }
+  q.innerHTML = '';
+  for(const c of G.queue){
+    const b = document.createElement('button');
+    b.className = 'cust' + (c.id === G.sel ? ' sel' : '');
+    b.dataset.id = c.id;
+    b.innerHTML = `<div class="who"><span class="face">${c.mad ? (c.person.english ? '😬' : '😑') : c.person.face}</span><span class="nm">${c.person.name}</span></div>
+      <div class="bubble${c.mad ? ' mad' : ''}">${c.mad || c.say}</div><div class="pbar"><i></i></div>`;
+    b.onclick = () => { G.sel = c.id; sfx.click(); renderQueue(); };
+    c.el = b; c.bar = b.querySelector('.pbar i');
+    q.appendChild(b);
+  }
+  updateBars();
+}
+function updateBars(){
+  for(const c of G.queue){
+    if(!c.bar) continue;
+    const f = Math.max(0, c.left / c.max);
+    c.bar.style.width = (f * 100) + '%';
+    c.bar.style.background = f > .5 ? 'var(--ok)' : f > .25 ? 'var(--warn)' : 'var(--bad)';
+  }
+}
+function removeCust(c){
+  G.queue = G.queue.filter(x => x !== c);
+  if(G.sel === c.id) G.sel = G.queue[0] ? G.queue[0].id : null;
+  renderQueue();
+}
+
+/* ---------- serve ---------- */
+function serve(){
+  if(!G || G.over) return;
+  if(!cup.base){ toast('Serve empty cup ah? 🤨', 'bad'); sfx.bad(); return; }
+  const c = G.queue.find(x => x.id === G.sel);
+  if(!c){ toast('Nobody waiting leh. Drink it yourself lor. ☕'); cup = blankCup(); renderCup(); return; }
+  if(same(c.order, cup)){
+    G.streak++; G.best = Math.max(G.best, G.streak); G.served++;
+    const frac = c.left / c.max;
+    let amt = price(c.order) + Math.round(frac * 6) / 10 + (G.streak >= 3 ? 0.2 * Math.min(G.streak - 2, 5) : 0);
+    if(G.sifu) amt *= 1.5;
+    G.money += amt;
+    sfx.good();
+    toast(`${pick(HAPPY)} +$${amt.toFixed(2)}${G.streak >= 3 ? ` · 🔥${G.streak} streak` : ''}`, 'good');
+    removeCust(c);
+  } else {
+    G.wrong++; G.streak = 0;
+    c.mad = gripe(c.order, cup, c.person);
+    c.left = Math.max(1, c.left - 4);
+    sfx.bad();
+    renderQueue();
+    const el = $(`.cust[data-id="${c.id}"]`);
+    if(el){ el.classList.add('shake'); }
+    clearTimeout(c.madT);
+    c.madT = setTimeout(() => { c.mad = null; if(G.queue.includes(c)) renderQueue(); }, 2600);
+  }
+  cup = blankCup(); renderCup(); updateHUD();
+}
+
+/* ---------- loop ---------- */
+function loop(now){
+  if(!G || G.over) return;
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  G.t += dt;
+  const lvl = level();
+  G.nextSpawn -= dt;
+  const maxQ = lvl >= 2 ? 4 : 3;
+  if(G.nextSpawn <= 0 && G.queue.length < maxQ){
+    spawn();
+    const [a, b] = [[5, 7], [4, 5.5], [3.2, 4.5], [2.6, 3.6]][lvl];
+    G.nextSpawn = a + Math.random() * (b - a);
+  }
+  if(!G.queue.length && G.nextSpawn > 1.2) G.nextSpawn = 1.2;
+  for(const c of [...G.queue]){
+    c.left -= dt;
+    if(c.left <= 0){
+      G.walkouts++; G.streak = 0;
+      sfx.leave();
+      toast(`${c.person.face} ${c.person.name}: "${pick(LEAVE)}"`, 'bad');
+      removeCust(c);
+    }
+  }
+  updateBars(); updateHUD();
+  if(G.t >= GAME_LEN || G.walkouts >= MAX_WALKOUTS) return end();
+  requestAnimationFrame(loop);
+}
+function updateHUD(){
+  if(!G) return;
+  const rem = Math.max(0, Math.ceil(GAME_LEN - G.t));
+  $('#hTime').textContent = `⏱ ${Math.floor(rem / 60)}:${String(rem % 60).padStart(2, '0')}`;
+  $('#hMoney').textContent = `💰 $${G.money.toFixed(2)}`;
+  $('#hStreak').textContent = `🔥 ${G.streak}`;
+  $('#hLives').textContent = '❤️'.repeat(MAX_WALKOUTS - G.walkouts) + '🖤'.repeat(G.walkouts);
+}
+function toast(msg, cls = ''){
+  const t = document.createElement('div');
+  t.className = 'toast ' + cls; t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+/* ---------- start / end ---------- */
+const RANKS = [
+  [0, 'Blur Sotong 🦑', 'You and the kopi sock are not on speaking terms yet.'],
+  [5, 'Kopitiam Newbie 🐣', 'The aunties are already gossiping about you. Could be worse.'],
+  [10, 'Cookhouse NSF 🪖', 'Steady. You can survive a morning rush, mostly.'],
+  [16, 'Kopi Auntie Apprentice 👵', 'The regulars nod at you now. High praise.'],
+  [22, 'Kopi Sifu 🏆', 'Uncle Lim smiled. Nobody has seen this since 1987.'],
+];
+function start(){
+  $('#startScreen').classList.add('hide');
+  $('#endScreen').classList.add('hide');
+  G = { t:0, money:0, served:0, wrong:0, streak:0, best:0, walkouts:0, queue:[], sel:null, nextSpawn:0.6, id:0, over:false, sifu: $('#sifu').checked };
+  cup = blankCup(); renderCup(); renderQueue(); updateHUD();
+  last = performance.now();
+  requestAnimationFrame(loop);
+}
+function end(){
+  G.over = true;
+  const fired = G.walkouts >= MAX_WALKOUTS;
+  const r = [...RANKS].reverse().find(x => G.served >= x[0]);
+  $('#endTitle').textContent = fired ? 'You\'re fired! 😱' : 'Shop closed! 🎉';
+  $('#endReason').textContent = fired
+    ? 'Three customers walked off. The real uncle is back from the toilet and he is NOT happy.'
+    : 'You survived the morning rush. ' + r[2];
+  $('#endRank').textContent = r[1];
+  $('#sServed').textContent = G.served;
+  $('#sMoney').textContent = '$' + G.money.toFixed(2);
+  $('#sStreak').textContent = G.best;
+  $('#sWrong').textContent = G.wrong;
+  $('#endScreen').classList.remove('hide');
+}
+function dictHTML(){
+  return `<b>Kopi</b><span>coffee + condensed milk (sweet)</span>
+  <b>Teh</b><span>tea + condensed milk</span>
+  <b>O</b><span>no milk, sugar only</span>
+  <b>C</b><span>evaporated milk + sugar</span>
+  <b>Kosong</b><span>no sugar</span>
+  <b>Siew dai</b><span>less sweet</span>
+  <b>Ga dai</b><span>extra sweet</span>
+  <b>Gao / Po</b><span>strong / weak</span>
+  <b>Peng</b><span>iced</span>
+  <b>Tapau</b><span>takeaway (in the plastic bag with a string!)</span>
+  <b>Milo Dinosaur</b><span>Milo peng + mountain of Milo powder</span>
+  <b>Milo Godzilla</b><span>Dinosaur + ice cream</span>
+  <span class="ex"><b>Kopi O Kosong Peng</b> = black coffee, no sugar, iced. Tourists order in English, so you have to translate!</span>`;
+}
+
+/* ---------- wire up ---------- */
+buildControls(); renderCup();
+$('#dictStart').innerHTML = dictHTML();
+$('#drawer').innerHTML = `<div class="dict">${dictHTML()}</div>`;
+$('#startBtn').onclick = start;
+$('#againBtn').onclick = start;
+$('#serveBtn').onclick = serve;
+$('#trashBtn').onclick = () => { cup = blankCup(); renderCup(); sfx.click(); };
+$('#dictBtn').onclick = () => $('#drawer').classList.toggle('open');
+$('#drawer').onclick = () => $('#drawer').classList.remove('open');
+$('#muteBtn').onclick = () => { muted = !muted; $('#muteBtn').textContent = muted ? '🔇' : '🔊'; };
+$('#shareBtn').onclick = () => {
+  const r = [...RANKS].reverse().find(x => G.served >= x[0]);
+  const txt = `☕ I served ${G.served} kopi and made $${G.money.toFixed(2)} in Kopi Order Master. Rank: ${r[1]}. Can you beat me? ${location.href}`;
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(
+    () => toast('Copied! Go and brag. 😎', 'good'),
+    () => prompt('Copy this:', txt));
+};
+document.addEventListener('keydown', e => {
+  if(!G || G.over) { if(e.key === 'Enter' && !$('#startScreen').classList.contains('hide')) start(); return; }
+  if(e.key === 'Enter'){ e.preventDefault(); serve(); }
+  if(e.key === 'Escape'){ cup = blankCup(); renderCup(); }
+});
+})();
+</script>
+</body>
+</html>

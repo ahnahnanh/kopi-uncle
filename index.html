@@ -172,7 +172,7 @@ label.tog input{width:20px;height:20px;accent-color:var(--green)}
         <button class="serve" id="serveBtn">SERVE ✋</button>
         <button class="trash" id="trashBtn">Pour away</button>
       </div>
-      <div class="kbd">Enter = serve · Esc = pour away · Tap a customer to pick who you're serving</div>
+      <div class="kbd">Tap an option again to un-select · Enter = serve · Esc = pour away · Tap a customer to pick who you're serving</div>
     </div>
     <div class="controls" id="controls"></div>
   </section>
@@ -225,12 +225,12 @@ const GAME_LEN = 120, MAX_WALKOUTS = 3;
 /* ---------- drink model ---------- */
 const GROUPS = [
   { key:'base', title:'1 · Drink', opts:[['kopi','Kopi','☕'],['teh','Teh','🍵'],['milo','Milo','🍫']] },
-  { key:'milk', title:'2 · Milk', opts:[['condensed','Condensed','🥫'],['evap','Evaporated (C)','🥛'],['none','No milk (O)','🚫']] },
-  { key:'sugar', title:'3 · Sugar', opts:[['kosong','Kosong','∅'],['siewdai','Siew dai','▫'],['normal','Normal','▫▫'],['gadai','Ga dai','▫▫▫']] },
-  { key:'strength', title:'4 · Strength', opts:[['po','Po (weak)','💧'],['normal','Normal','☕'],['gao','Gao (strong)','💪']] },
+  { key:'milk', title:'2 · Milk', opts:[['evap','Evaporated (C)','🥛'],['none','No milk (O)','🚫']] },
+  { key:'sugar', title:'3 · Sugar', opts:[['kosong','Kosong','∅'],['siewdai','Siew dai','▫'],['gadai','Ga dai','▫▫▫']] },
+  { key:'strength', title:'4 · Strength', opts:[['po','Po (weak)','💧'],['gao','Gao (strong)','💪']] },
 ];
 const EXTRAS = [['ice','Peng (ice)','🧊'],['tapau','Tapau (bag)','🛍️'],['powder','Milo mountain','⛰️'],['icecream','Ice cream','🍨']];
-const blankCup = () => ({ base:null, milk:'condensed', sugar:'normal', strength:'normal', ice:false, tapau:false, powder:false, icecream:false });
+const blankCup = () => ({ base:null, milk:null, sugar:null, strength:null, ice:false, tapau:false, powder:false, icecream:false });
 const FIELDS = ['base','milk','sugar','strength','ice','tapau','powder','icecream'];
 
 function nameOf(d){
@@ -269,12 +269,12 @@ function englishOf(d){
   if(d.milk === 'none') bits.push('black');
   let s = 'a ' + bits.join(' ') + ' ' + (d.base === 'kopi' ? 'coffee' : 'tea');
   const tail = [];
-  if(d.milk === 'condensed') tail.push('with condensed milk');
+  if(d.milk === null) tail.push('with condensed milk');
   if(d.milk === 'evap') tail.push('with evaporated milk');
   if(d.sugar === 'kosong') tail.push('no sugar');
   if(d.sugar === 'siewdai') tail.push('less sweet');
   if(d.sugar === 'gadai') tail.push('extra sweet');
-  if(d.sugar === 'normal' && d.milk !== 'condensed') tail.push('with sugar');
+  if(d.sugar === null && d.milk !== null) tail.push('with sugar');
   if(d.tapau) tail.push('to go');
   return s + (tail.length ? ', ' + tail.join(', ') : '');
 }
@@ -288,9 +288,9 @@ function randomOrder(lvl, forceTapau){
     if(lvl >= 2 && d.ice && r() < 0.55){ d.powder = true; if(lvl >= 3 && r() < 0.4) d.icecream = true; }
   } else {
     d.base = r() < 0.6 ? 'kopi' : 'teh';
-    d.milk = pick(['condensed','evap','none']);
-    if(lvl >= 1) d.sugar = pick(['kosong','siewdai','siewdai','normal','gadai']);
-    if(d.milk === 'condensed' && d.sugar === 'kosong') d.sugar = 'siewdai';
+    d.milk = pick([null,'evap','none']);
+    if(lvl >= 1) d.sugar = pick(['kosong','siewdai','siewdai',null,'gadai']);
+    if(d.milk === null && d.sugar === 'kosong') d.sugar = 'siewdai';
     if(lvl >= 2 && r() < 0.35) d.strength = pick(['gao','po']);
     d.ice = lvl >= 1 && r() < (lvl >= 2 ? 0.4 : 0.25);
   }
@@ -299,9 +299,9 @@ function randomOrder(lvl, forceTapau){
 }
 const same = (a,b) => FIELDS.every(f => a[f] === b[f]);
 const GRIPE = {
-  milk:{ condensed:'Where my condensed milk? Normal one got milk!', evap:'C means evaporated milk lah!', none:'O means NO milk lah!' },
-  sugar:{ kosong:'Kosong means NO sugar!', siewdai:'Siew dai = less sweet. Doctor say cut sugar!', normal:'Normal sweet can already, why anyhow change?', gadai:'Ga dai! I want MORE sweet!' },
-  strength:{ gao:'So weak! I say gao, strong one!', po:'Wah so thick! Po means weak lah.', normal:'Just normal strength can already.' },
+  milk:{ null:'Where my condensed milk? Normal one got milk! Don\'t anyhow add.', evap:'C means evaporated milk lah!', none:'O means NO milk lah!' },
+  sugar:{ kosong:'Kosong means NO sugar!', siewdai:'Siew dai = less sweet. Doctor say cut sugar!', null:'Normal sweet can already, why anyhow change?', gadai:'Ga dai! I want MORE sweet!' },
+  strength:{ gao:'So weak! I say gao, strong one!', po:'Wah so thick! Po means weak lah.', null:'Just normal strength can already.' },
   ice:{ true:'Peng means ICE leh!', false:'Who ask for ice? I want hot!' },
   tapau:{ true:'Tapau lah! I bringing go one!', false:'I drink here leh, why give me bag?' },
   powder:{ true:'Dinosaur must got Milo mountain on top!', false:'Why got powder mountain? I never order.' },
@@ -374,9 +374,9 @@ function buildControls(){
     const b = e.target.closest('.opt'); if(!b) return;
     sfx.click();
     if(b.dataset.k){
-      cup[b.dataset.k] = b.dataset.v;
+      cup[b.dataset.k] = cup[b.dataset.k] === b.dataset.v ? null : b.dataset.v;
       if(b.dataset.k === 'base'){
-        if(cup.base === 'milo'){ cup.milk = 'condensed'; cup.sugar = 'normal'; cup.strength = 'normal'; }
+        if(cup.base === 'milo'){ cup.milk = null; cup.sugar = null; cup.strength = null; }
         else { cup.powder = false; cup.icecream = false; }
       }
     } else cup[b.dataset.x] = !cup[b.dataset.x];
@@ -384,8 +384,8 @@ function buildControls(){
   });
 }
 const COLORS = {
-  kopi:{ none:'#3a2213', evap:'#7a4f2c', condensed:'#9a6a3f' },
-  teh: { none:'#8c3a12', evap:'#b8743f', condensed:'#cf9460' },
+  kopi:{ none:'#3a2213', evap:'#7a4f2c', null:'#9a6a3f' },
+  teh: { none:'#8c3a12', evap:'#b8743f', null:'#cf9460' },
 };
 function renderCup(){
   document.querySelectorAll('.opt[data-k]').forEach(b => b.classList.toggle('on', cup[b.dataset.k] === b.dataset.v));
@@ -560,7 +560,7 @@ function end(){
   $('#endScreen').classList.remove('hide');
 }
 function dictHTML(){
-  return `<b>Kopi</b><span>coffee + condensed milk (sweet)</span>
+  return `<b>Kopi</b><span>coffee + condensed milk (sweet). Plain = don't tap anything else!</span>
   <b>Teh</b><span>tea + condensed milk</span>
   <b>O</b><span>no milk, sugar only</span>
   <b>C</b><span>evaporated milk + sugar</span>

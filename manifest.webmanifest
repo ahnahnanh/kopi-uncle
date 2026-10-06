@@ -1,0 +1,16 @@
+{
+  "name": "Kopi Order Master",
+  "short_name": "Kopi Master",
+  "description": "Survive the kopitiam morning rush. Decode Singlish kopi orders before the uncles lose patience.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#134a35",
+  "theme_color": "#c8382e",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

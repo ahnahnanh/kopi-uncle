@@ -12,6 +12,9 @@ js/drink.js       drink model: naming (Singlish/English), random orders, checkin
 js/content.js     all the words: customers, lines, complaints, tutorial lessons, ranks, cheat sheet
 js/sound.js       Web Audio beeps + mute
 js/utils.js       tiny helpers
+js/pwa.js         installable-app bits: offline service worker + Install button
+sw.js             service worker (offline cache)
+manifest.webmanifest + icons/   app name, colours and home-screen icons
 ```
 
 **Want to add Singlish lines, customers, or lessons?** Edit `js/content.js` only.
@@ -23,6 +26,12 @@ It uses native JavaScript modules, so open it through a local server (double-cli
 ```
 npx serve .        # or: python3 -m http.server
 ```
+
+## Installable web app
+
+Players can install it to their home screen (📲 **Install as app** on Android/desktop Chrome, or **Share → Add to Home Screen** on iPhone). It then opens full-screen and works offline.
+
+**When you deploy changes, bump `VERSION` in `sw.js`** (e.g. `kopi-v1` → `kopi-v2`) so installed players pick up the new files.
 
 ## Deploy
 

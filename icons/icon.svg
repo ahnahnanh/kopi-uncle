@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#c8382e"/>
+  <rect x="28" y="28" width="456" height="456" rx="72" fill="none" stroke="#f5c542" stroke-width="20"/>
+  <!-- steam -->
+  <g fill="none" stroke="#fdf3e1" stroke-width="16" stroke-linecap="round" opacity=".9">
+    <path d="M206 118c-18 22 18 38 0 62"/>
+    <path d="M256 104c-18 24 18 42 0 70"/>
+    <path d="M306 118c-18 22 18 38 0 62"/>
+  </g>
+  <!-- saucer -->
+  <ellipse cx="256" cy="398" rx="150" ry="24" fill="#fdf3e1"/>
+  <!-- handle -->
+  <path d="M352 238h20a44 44 0 0 1 0 88h-28" fill="none" stroke="#fdf3e1" stroke-width="22"/>
+  <!-- cup -->
+  <path d="M146 214h214v74c0 62-46 104-107 104s-107-42-107-104z" fill="#fdf3e1"/>
+  <!-- kopi -->
+  <ellipse cx="253" cy="216" rx="104" ry="18" fill="#7a4f2c"/>
+  <!-- green cup band (kopitiam cup) -->
+  <path d="M152 270h202" stroke="#1f6f50" stroke-width="12"/>
+</svg>

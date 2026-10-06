@@ -2,12 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Kopi Order Master</title>
 <meta name="description" content="Survive the kopitiam morning rush. Decode Singlish kopi orders before the uncles lose patience.">
 <meta property="og:title" content="Kopi Order Master ☕">
 <meta property="og:description" content="Kopi O kosong peng? Teh C siew dai dabao? Survive the kopitiam morning rush.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#c8382e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kopi Master">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:image" content="icons/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -71,6 +79,10 @@
       <button class="ghost" id="tutBtn">📘 Tutorial first (recommended)</button>
       <label class="tog"><input type="checkbox" id="sifu"> Sifu mode: no Kopi 101 cheat sheet during the shift (×1.5 money)</label>
     </div>
+    <div class="row">
+      <button class="ghost" id="installBtn" hidden>📲 Install as app</button>
+      <p class="installtip" id="installTip" hidden>📲 Play it like an app: tap <b>Share</b> then <b>Add to Home Screen</b>.</p>
+    </div>
   </div>
 </div>
 
@@ -105,5 +117,6 @@
 </div>
 
 <script type="module" src="js/game.js"></script>
+<script type="module" src="js/pwa.js"></script>
 </body>
 </html>

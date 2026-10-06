@@ -6,13 +6,17 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
+html{-webkit-text-size-adjust:100%}
+button,.opt,.cust{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.installtip{margin:0;font-size:14px;color:var(--muted)}
+[hidden]{display:none!important}
 body{
   font-family:"Baloo 2",system-ui,sans-serif; color:var(--ink); min-height:100vh;
   background:repeating-conic-gradient(#d9ebdf 0 25%,#f4faf6 0 50%) 0 0/32px 32px;
   -webkit-tap-highlight-color:transparent;
 }
 button{font:inherit;cursor:pointer;color:inherit}
-.wrap{max-width:1040px;margin:0 auto;padding:12px 16px 32px}
+.wrap{max-width:1040px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(32px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 
 /* signboard */
 .sign{

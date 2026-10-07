@@ -35,7 +35,7 @@ function buildControls(){
     const d = b.dataset;
     const no = msg => { sfx.bad(); toast(msg, 'bad'); b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); setTimeout(() => b.classList.remove('nope'), 400); };
     if(d.cup){
-      if(!cup.cup){ cup.cup = d.cup; sfx.click(); renderCup(); }
+      if(!cup.cup){ cup.cup = d.cup; sfx.click(); renderCup(); popIn($('#cup')); }
       else no(cup.cup === d.cup ? 'Already got cup lah.' : 'Cup already out. Pour away first if wrong!');
       return;
     }
@@ -58,13 +58,16 @@ function buildControls(){
     else if(d.ice){ if(cup.ice) return no('Ice already inside.'); cup.ice = true; }
     sfx.click();
     renderCup();
+    bumpCup();
   };
 }
-const COLORS = {
-  kopi:{ null:'#3a2213', evap:'#7a4f2c', condensed:'#9a6a3f' },
-  teh: { null:'#8c3a12', evap:'#b8743f', condensed:'#cf9460' },
-  milo:{ null:'#4a2e1c', evap:'#6b4630', condensed:'#6b4630' },
-};
+// Unstirred kopi: the drink sits on top, the milk settles at the bottom of the cup.
+const COLORS = { kopi:'#3b2314', teh:'#9a4a1c', milo:'#5b3a25' };
+const MILK = { condensed:'#f1e1bf', evap:'#faf3e3' };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const anim = (el, frames, opts) => (el && !reduced.matches && el.animate) ? el.animate(frames, opts) : null;
+function bumpCup(){ anim($('#cup'), [{ scale: 1 }, { scale: 1.07 }, { scale: 1 }], { duration: 220, easing: 'ease-out' }); }
+function popIn(el){ anim(el, [{ opacity: 0, scale: .85 }, { opacity: 1, scale: 1 }], { duration: 220, easing: 'ease-out' }); }
 function renderCup(){
   for(const k of ['base','milk','cup']) document.querySelectorAll(`.opt[data-${k}]`).forEach(b => b.classList.toggle('on', cup[k] === b.dataset[k]));
   document.querySelector('.opt[data-ice]').classList.toggle('on', cup.ice);
@@ -72,13 +75,26 @@ function renderCup(){
   document.querySelectorAll('.opt[data-base] .shots').forEach(x => x.textContent = (x.parentNode.dataset.base === cup.base && cup.shots === 2) ? ' ×2' : '');
   $('#sugarBtn').classList.toggle('on', cup.sugar > 0);
   $('#spoons').textContent = cup.sugar ? ' ×' + cup.sugar : '';
-  const el = $('#cup'), liq = $('#liquid');
+
+  const el = $('#cup'), liq = $('#liquid'), milk = $('#milklayer');
   el.className = 'cup' + (cup.cup === 'takeaway' ? ' bag' : cup.cup === 'normal' ? '' : ' nocup');
-  if(cup.base){ liq.style.height = '78%'; liq.style.background = COLORS[cup.base][cup.milk];
-    liq.style.filter = cup.shots === 2 ? 'brightness(.75)' : cup.water ? 'brightness(1.25) saturate(.7)' : ''; }
-  else if(cup.milk){ liq.style.height = '30%'; liq.style.background = '#f3ead8'; }
-  else liq.style.height = '0';
-  $('#ice').style.display = cup.ice ? 'block' : 'none';
+  $('#saucer').classList.toggle('on', cup.cup === 'normal');
+  // how full: milk alone ~25%, one shot ~68%, double ~76%, water tops it up
+  let fill = 0;
+  if(cup.base) fill = (cup.shots === 2 ? 76 : 68) + (cup.water ? 10 : 0);
+  else if(cup.milk) fill = 24;
+  else if(cup.water) fill = 30;
+  liq.style.height = fill + '%';
+  liq.style.backgroundColor = cup.base ? COLORS[cup.base] : cup.water ? '#d8ecf3' : 'transparent';
+  liq.style.filter = cup.shots === 2 ? 'brightness(.8)' : (cup.water && cup.base) ? 'brightness(1.3) saturate(.75)' : '';
+  milk.style.height = cup.milk ? (cup.base ? '22%' : '24%') : '0';
+  milk.style.backgroundColor = cup.milk ? MILK[cup.milk] : 'transparent';
+  $('#ice').classList.toggle('on', cup.ice);
+  $('#steam').classList.toggle('on', !!cup.base && !cup.ice);
+  const sug = $('#sugars');
+  while(sug.children.length < cup.sugar) sug.appendChild(document.createElement('i'));
+  while(sug.children.length > cup.sugar) sug.lastChild.remove();
+
   const parts = [];
   if(cup.cup) parts.push(CUPS.find(x => x[0] === cup.cup)[1]);
   if(cup.base) parts.push(BASES.find(x => x[0] === cup.base)[1] + (cup.shots === 2 ? ' ×2' : ''));
@@ -89,6 +105,35 @@ function renderCup(){
   const r = $('#readout');
   r.textContent = parts.length ? parts.join(' · ') : 'Empty. Start making something';
   r.classList.toggle('hidden', !parts.length);
+}
+// Send the current cup off with an animation (a copy flies away while the real cup resets underneath).
+function sendCup(kind, amount){
+  const stage = $('#cupstage'), tray = stage.querySelector('.tray');
+  const ghost = tray.cloneNode(true);
+  ghost.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+  ghost.classList.add('ghostcup');
+  // offsetLeft/Top are pre-transform layout coords, so the copy lines up even when the tray is scaled down on phones
+  Object.assign(ghost.style, { left: tray.offsetLeft + 'px', top: tray.offsetTop + 'px', width: tray.offsetWidth + 'px', height: tray.offsetHeight + 'px' });
+  stage.appendChild(ghost);
+  const frames = {
+    serve: [{ translate: '0 0', opacity: 1 }, { translate: '0 -80px', opacity: 0 }],
+    pour:  [{ rotate: '0deg', opacity: 1 }, { rotate: '-40deg', opacity: 1, offset: .5 }, { rotate: '-70deg', translate: '-30px 10px', opacity: 0 }],
+    wrong: [{ translate: '0 0' }, { translate: '-8px 0' }, { translate: '8px 0' }, { translate: '-5px 0' }, { translate: '0 20px', opacity: 0 }],
+  }[kind];
+  const a = anim(ghost, frames, { duration: kind === 'serve' ? 380 : 480, easing: 'ease-in' });
+  if(a) a.finished.then(() => ghost.remove(), () => ghost.remove()); else ghost.remove();
+  if(kind === 'wrong') anim(ghost, [{ filter: 'drop-shadow(0 0 0 #d64131)' }, { filter: 'drop-shadow(0 0 10px #d64131)' }], { duration: 300 });
+  if(amount){
+    const coin = document.createElement('div');
+    coin.className = 'coinpop'; coin.textContent = `🪙 +$${amount.toFixed(2)}`;
+    stage.appendChild(coin);
+    const c = anim(coin, [{ opacity: 0, translate: '-50% 10px', scale: .7 }, { opacity: 1, translate: '-50% -10px', scale: 1.05, offset: .25 }, { opacity: 0, translate: '-50% -60px', scale: 1 }], { duration: 1100, easing: 'ease-out' });
+    if(c) c.finished.then(() => coin.remove(), () => coin.remove()); else setTimeout(() => coin.remove(), 900);
+  }
+}
+function banner(msg){
+  const b = $('#banner');
+  b.textContent = msg; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
 }
 
 /* ---------- queue ---------- */
@@ -105,32 +150,58 @@ function spawn(){
   if(!G.sel) G.sel = c.id;
   renderQueue();
 }
+function custEl(c){
+  const b = document.createElement('button');
+  b.className = 'cust';
+  b.dataset.id = c.id;
+  b.innerHTML = `<div class="bubble"></div><div class="who"><span class="face"></span><span class="nm"></span></div><div class="pbar"><i></i></div>`;
+  b.querySelector('.nm').textContent = c.person.name;
+  b.onclick = () => { if(!G.queue.includes(c)) return; G.sel = c.id; sfx.click(); renderQueue(); };
+  c.bar = b.querySelector('.pbar i');
+  return b;
+}
 function renderQueue(){
   const q = $('#queue');
-  if(!G.queue.length){ q.innerHTML = '<div class="empty-q">No customers right now. Catch your breath…</div>'; return; }
-  q.innerHTML = '';
+  let empty = q.querySelector('.empty-q');
+  if(!G || !G.queue.length){
+    if(!empty){ empty = document.createElement('div'); empty.className = 'empty-q'; q.appendChild(empty); }
+    empty.textContent = G && !G.over ? 'No customers right now. Catch your breath…' : 'Shop is closed. Open it when you\'re ready.';
+  } else if(empty) empty.remove();
+  if(!G) return;
   for(const c of G.queue){
-    const b = document.createElement('button');
-    b.className = 'cust' + (c.id === G.sel ? ' sel' : '') + (isFinite(c.max) ? '' : ' tutc');
-    b.dataset.id = c.id;
-    b.innerHTML = `<div class="who"><span class="face">${c.mad ? (c.person.english ? '😬' : '😑') : c.person.face}</span><span class="nm">${c.person.name}</span></div>
-      <div class="bubble${c.mad ? ' mad' : ''}">${c.mad || c.say}</div><div class="pbar"><i></i></div>`;
-    b.onclick = () => { G.sel = c.id; sfx.click(); renderQueue(); };
-    c.el = b; c.bar = b.querySelector('.pbar i');
-    q.appendChild(b);
+    if(!c.el){ c.el = custEl(c); q.appendChild(c.el); }
+    const el = c.el;
+    el.classList.toggle('sel', c.id === G.sel);
+    el.classList.toggle('tutc', !isFinite(c.max));
+    const face = c.mad ? (c.person.english ? '😬' : '😑') : c.person.face;
+    const fe = el.querySelector('.face'); if(fe.textContent !== face) fe.textContent = face;
+    const html = c.mad || c.say, bub = el.querySelector('.bubble');
+    if(bub.dataset.html !== html){ bub.innerHTML = html; bub.dataset.html = html; }
+    bub.classList.toggle('mad', !!c.mad);
   }
   updateBars();
 }
+// Animate a customer card out, then remove it.
+function leave(c, how){
+  const el = c.el; if(!el) return;
+  c.el = null;
+  el.classList.remove('sel', 'urgent');
+  el.classList.add(how === 'mad' ? 'leave-mad' : 'leave-happy');
+  setTimeout(() => el.remove(), reduced.matches ? 150 : 550);
+}
+function clearQueueDom(){ $('#queue').querySelectorAll('.cust').forEach(e => e.remove()); }
 function updateBars(){
   for(const c of G.queue){
     if(!c.bar) continue;
     const f = isFinite(c.max) ? Math.max(0, c.left / c.max) : 1;
     c.bar.style.width = (f * 100) + '%';
-    c.bar.style.background = f > .5 ? 'var(--ok)' : f > .25 ? 'var(--warn)' : 'var(--bad)';
+    c.bar.style.backgroundColor = f > .5 ? 'var(--ok)' : f > .25 ? 'var(--warn)' : 'var(--bad)';
+    if(c.el) c.el.classList.toggle('urgent', f <= .25);
   }
 }
-function removeCust(c){
+function removeCust(c, how = 'happy'){
   G.queue = G.queue.filter(x => x !== c);
+  leave(c, how);
   if(G.sel === c.id) G.sel = G.queue[0] ? G.queue[0].id : null;
   if(!G.tutorial && !G.queue.length) G.nextSpawn = Math.max(G.nextSpawn, 1.5); // tiny breather
   renderQueue();
@@ -141,9 +212,9 @@ function serve(){
   if(!G || G.over) return;
   if(!cup.base && !cup.milk){ toast('Serve air ah? 🤨', 'bad'); sfx.bad(); return; }
   const c = G.queue.find(x => x.id === G.sel);
-  if(!c){ toast('Nobody waiting leh. Drink it yourself lor. ☕'); cup = blankCup(); renderCup(); return; }
+  if(!c){ toast('Nobody waiting leh. Drink it yourself lor. ☕'); sendCup('pour'); cup = blankCup(); renderCup(); return; }
   if(same(c.order, cup) && G.tutorial){
-    sfx.good(); toast(pick(HAPPY), 'good');
+    sfx.good(); toast(pick(HAPPY), 'good'); sendCup('serve');
     removeCust(c); cup = blankCup(); renderCup();
     setTimeout(nextLesson, 700);
     return;
@@ -154,17 +225,17 @@ function serve(){
     let amt = price(c.order) + Math.round(frac * 6) / 10 + (G.streak >= 3 ? 0.2 * Math.min(G.streak - 2, 5) : 0);
     if(G.sifu) amt *= 1.5;
     G.money += amt;
-    sfx.good();
+    sfx.good(); sendCup('serve', amt);
     toast(`${pick(HAPPY)} +$${amt.toFixed(2)}${G.streak >= 3 ? ` · 🔥${G.streak} streak` : ''}`, 'good');
     removeCust(c);
   } else {
     G.wrong++; G.streak = 0;
     c.mad = gripe(c.order, cup, c.person, G.tutorial);
     c.left = Math.max(1, c.left - 4);
-    sfx.bad();
+    sfx.bad(); sendCup('wrong');
     renderQueue();
-    const el = $(`.cust[data-id="${c.id}"]`);
-    if(el){ el.classList.add('shake'); }
+    const el = c.el;
+    if(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
     clearTimeout(c.madT);
     c.madT = setTimeout(() => { c.mad = null; if(G.queue.includes(c)) renderQueue(); }, 2600);
   }
@@ -177,7 +248,7 @@ function loop(now){
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   G.t += dt;
   const lvl = level(), stage = STAGES[lvl];
-  if(lvl !== G.lvl){ G.lvl = lvl; if(stage.msg) toast(stage.msg); }
+  if(lvl !== G.lvl){ G.lvl = lvl; if(stage.msg) banner(stage.msg); }
   G.nextSpawn -= dt;
   if(G.nextSpawn <= 0 && G.queue.length < stage.maxQ){
     spawn();
@@ -191,7 +262,8 @@ function loop(now){
       G.walkouts++; G.streak = 0;
       sfx.leave();
       toast(`${c.person.face} ${c.person.name}: "${pick(LEAVE)}"`, 'bad');
-      removeCust(c);
+      const h = $('#hLives'); h.classList.remove('hurt'); void h.offsetWidth; h.classList.add('hurt');
+      removeCust(c, 'mad');
     }
   }
   updateBars(); updateHUD();
@@ -203,7 +275,13 @@ function updateHUD(){
   if(G.tutorial){ $('#hTime').textContent = `📘 ${Math.min(G.step + 1, LESSONS.length)}/${LESSONS.length}`; }
   const rem = Math.max(0, Math.ceil(GAME_LEN - G.t));
   if(!G.tutorial) $('#hTime').textContent = `⏱ ${Math.floor(rem / 60)}:${String(rem % 60).padStart(2, '0')}`;
-  $('#hMoney').textContent = `💰 $${G.money.toFixed(2)}`;
+  if(G.shown === undefined) G.shown = G.money;
+  if(G.shown < G.money){
+    G.shown = Math.min(G.money, G.shown + Math.max(0.03, (G.money - G.shown) * 0.12));
+    if(G.money - G.shown < 0.005) G.shown = G.money;
+    const m = $('#hMoney'); if(!m.classList.contains('bump')){ m.classList.add('bump'); setTimeout(() => m.classList.remove('bump'), 350); }
+  } else G.shown = G.money;
+  $('#hMoney').textContent = `💰 $${G.shown.toFixed(2)}`;
   $('#hStreak').textContent = `🔥 ${G.streak}`;
   $('#hLives').textContent = '❤️'.repeat(MAX_WALKOUTS - G.walkouts) + '🖤'.repeat(G.walkouts);
 }
@@ -218,6 +296,7 @@ function toast(msg, cls = ''){
 function startTutorial(){
   $('#startScreen').classList.add('hide'); $('#endScreen').classList.add('hide'); $('#tutDone').classList.add('hide');
   G = { t:0, money:0, served:0, wrong:0, streak:0, best:0, walkouts:0, queue:[], sel:null, id:0, over:false, sifu:false, tutorial:true, step:-1 };
+  clearQueueDom();
   cup = blankCup(); renderCup();
   $('#dictBtn').style.display = ''; $('#tutBox').classList.remove('hide');
   ['hMoney','hStreak','hLives'].forEach(id => $('#' + id).style.display = 'none');
@@ -229,6 +308,7 @@ function nextLesson(){
   if(G.step >= LESSONS.length) return finishTutorial();
   const L = LESSONS[G.step], person = P(L.who);
   const say = pick(person.lines).replace('{o}', person.english ? englishOf(L.o) : `<b>${nameOf(L.o)}</b>`);
+  G.queue.forEach(x => leave(x));
   G.queue = [{ id: ++G.id, person, order: L.o, max: Infinity, left: Infinity, say, mad: null }];
   G.sel = G.id;
   $('#tutStep').textContent = `Lesson ${G.step + 1} of ${LESSONS.length}`;
@@ -265,6 +345,7 @@ function start(){
   $('#startScreen').classList.add('hide');
   $('#endScreen').classList.add('hide');
   G = { t:0, money:0, served:0, wrong:0, streak:0, best:0, walkouts:0, queue:[], sel:null, nextSpawn:0.6, id:0, lvl:0, over:false, sifu: $('#sifu').checked };
+  clearQueueDom();
   cup = blankCup(); renderCup(); renderQueue(); updateHUD();
   $('#dictBtn').style.display = G.sifu ? 'none' : ''; $('#drawer').classList.remove('open');
   $('#tutBox').classList.add('hide'); $('#tutDone').classList.add('hide'); clearHints();
@@ -278,7 +359,7 @@ function goHome(){
   $('#drawer').classList.remove('open');
   clearHints();
   cup = blankCup(); renderCup();
-  $('#queue').innerHTML = '<div class="empty-q">Shop is closed. Open it when you\'re ready.</div>';
+  clearQueueDom(); renderQueue();
   $('#hTime').textContent = `⏱ ${Math.floor(GAME_LEN / 60)}:${String(GAME_LEN % 60).padStart(2, '0')}`;
   $('#startScreen').classList.remove('hide');
 }
@@ -313,7 +394,8 @@ $('#againBtn').onclick = start;
 $('#homeBtn').onclick = goHome;
 $('#tutHome').onclick = goHome;
 $('#serveBtn').onclick = serve;
-$('#trashBtn').onclick = () => { cup = blankCup(); renderCup(); sfx.click(); };
+function pourAway(){ if(cup.cup) sendCup('pour'); cup = blankCup(); renderCup(); sfx.click(); }
+$('#trashBtn').onclick = pourAway;
 $('#dictBtn').onclick = () => $('#drawer').classList.toggle('open');
 $('#drawer').onclick = () => $('#drawer').classList.remove('open');
 $('#muteBtn').onclick = () => { $('#muteBtn').textContent = toggleMute() ? '🔇' : '🔊'; };
@@ -327,5 +409,5 @@ $('#shareBtn').onclick = () => {
 document.addEventListener('keydown', e => {
   if(!G || G.over) { if(e.key === 'Enter' && !$('#startScreen').classList.contains('hide')) start(); return; }
   if(e.key === 'Enter'){ e.preventDefault(); serve(); }
-  if(e.key === 'Escape'){ cup = blankCup(); renderCup(); }
+  if(e.key === 'Escape') pourAway();
 });

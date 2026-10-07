@@ -1,11 +1,11 @@
 // Service worker: makes the game load instantly and work offline.
 // Bump VERSION whenever you deploy changes so players get the new files.
-const VERSION = 'kopi-v2';
+const VERSION = 'kopi-v3';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'css/style.css',
   'js/game.js', 'js/drink.js', 'js/content.js', 'js/sound.js', 'js/utils.js', 'js/pwa.js',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
 self.addEventListener('install', e => {

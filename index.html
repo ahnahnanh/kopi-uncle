@@ -23,7 +23,7 @@
 <body>
 <div class="wrap">
   <header class="sign">
-    <h1>☕ KOPI ORDER MASTER<small>Ah Huat Kopitiam · since 1987</small></h1>
+    <div class="brand"><span class="logo" aria-hidden="true"></span><h1>KOPI ORDER MASTER<small><span class="zh">亚发咖啡店</span> Ah Huat Kopitiam · since 1987</small></h1></div>
     <div class="hud">
       <span id="hTime">⏱ 2:30</span>
       <span id="hMoney">💰 $0.00</span>
@@ -43,19 +43,24 @@
 
   <section class="station">
     <div class="cupzone">
-      <div class="cupstage">
-        <div class="cup" id="cup">
-          <div class="handle"></div>
-          <div class="liquid" id="liquid"><div class="foam"></div></div>
-          <div class="ice" id="ice">🧊🧊🧊</div>
-          <div class="heap" id="heap"></div>
-          <div class="scoop" id="scoop">🍨</div>
+      <div class="cupstage" id="cupstage">
+        <div class="tray">
+          <div class="saucer" id="saucer"></div>
+          <div class="cup nocup" id="cup">
+            <div class="handle"></div>
+            <div class="liquid" id="liquid"></div>
+            <div class="milklayer" id="milklayer"></div>
+            <div class="ice" id="ice"><i></i><i></i><i></i></div>
+            <div class="band"></div>
+            <div class="steam" id="steam"><i></i><i></i><i></i></div>
+          </div>
+          <div class="sugars" id="sugars"></div>
         </div>
       </div>
       <div class="readout" id="readout">Pick a drink</div>
       <div class="actions">
         <button class="serve" id="serveBtn">SERVE ✋</button>
-        <button class="trash" id="trashBtn">Pour away</button>
+        <button class="trash" id="trashBtn">🫗 Pour away</button>
       </div>
       <div class="kbd">Cup first · No take-backs: wrong? Pour away · Tap the drink twice = double shot · Sugar: tap per spoon · Enter = serve · Esc = pour away · Tap a customer to pick who you're serving</div>
     </div>
@@ -63,14 +68,18 @@
   </section>
 </div>
 
-<div class="toasts" id="toasts"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="banner" id="banner" aria-live="polite"></div>
 
 <div class="drawer" id="drawer"></div>
 
 <!-- start screen -->
 <div class="overlay" id="startScreen">
   <div class="card">
-    <h2>Kopi Order Master</h2>
+    <div class="hero">
+      <img class="hero-cup" src="icons/icon.svg" alt="" width="84" height="84">
+      <div><div class="eyebrow"><span class="zh">亚发咖啡店</span> · Ah Huat Kopitiam</div><h2>Kopi Order Master</h2></div>
+    </div>
     <p>It's 7am at Ah Huat Kopitiam. The uncle who usually makes the drinks has "gone to the toilet" and hasn't come back. Now you're on the counter.</p>
     <p><b>How to play:</b> read the order, make the drink, hit <b>Serve</b>. Get it wrong and they'll let you know. If 3 customers walk off, you're fired. The shift is 2½ minutes: it starts slow, then the crowd picks up.</p>
     <details class="dictwrap" id="dictWrap" open><summary>📖 Kopi 101 cheat sheet</summary><div class="dict" id="dictStart"></div></details>
@@ -101,7 +110,7 @@
   <div class="card">
     <h2 id="endTitle">Shop closed!</h2>
     <p id="endReason"></p>
-    <div class="rank" id="endRank"></div>
+    <div class="stampwrap"><div class="rank" id="endRank"></div></div>
     <div class="stats">
       <div>Drinks served<b id="sServed">0</b></div>
       <div>Money made<b id="sMoney">$0</b></div>
